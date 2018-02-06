@@ -76,6 +76,7 @@ android {
         multiDexEnabled true
         vectorDrawables.useSupportLibrary = true
         archivesBaseName = 'collect'
+        buildConfigField "String", "ODK_ROOT_FOLDER", "\"odk\""
     }
 
     signingConfigs {
@@ -114,6 +115,19 @@ android {
             testCoverageEnabled(true)
             resValue("bool", "FIREBASE_CRASH_ENABLED", "false")
         }
+    }
+
+    flavorDimensions "country", "application"
+
+    productFlavors {
+        nutrition {
+            dimension "application"
+            buildConfigField "String", "ODK_ROOT_FOLDER", "\"odk_nutrition\""
+        }
+        somalia {
+            dimension "country"
+        }
+
     }
 
     // https://stackoverflow.com/a/27119543/152938
