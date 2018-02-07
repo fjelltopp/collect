@@ -12,8 +12,8 @@ ant.condition(property: 'os', value: 'unix') {
     os(family: 'unix')
 }
 
-// Build numbers were manually set until 1067
-def LEGACY_BUILD_NUMBER_OFFSET = 1067
+// Build numbers were manually set until 1115
+def LEGACY_BUILD_NUMBER_OFFSET = 1115
 
 // Based on http://stackoverflow.com/questions/17097263#24121734
 def getMasterCommitCount = { ->
@@ -76,7 +76,9 @@ android {
         multiDexEnabled true
         vectorDrawables.useSupportLibrary = true
         archivesBaseName = 'collect'
+
         buildConfigField "String", "ODK_ROOT_FOLDER", "\"odk\""
+        buildConfigField "boolean", "FORMS_CLEANUP", "false"
     }
 
     signingConfigs {
@@ -117,15 +119,16 @@ android {
         }
     }
 
-    flavorDimensions "country", "application"
+    flavorDimensions "COUNTRY", "APPLICATION"
 
     productFlavors {
         nutrition {
-            dimension "application"
+            dimension "APPLICATION"
             buildConfigField "String", "ODK_ROOT_FOLDER", "\"odk_nutrition\""
+            applicationId('org.odk.collect.android')
         }
         somalia {
-            dimension "country"
+            dimension "COUNTRY"
         }
 
     }

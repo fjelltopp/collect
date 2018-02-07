@@ -49,6 +49,8 @@ import org.odk.collect.android.preferences.AdminSharedPreferences;
 import org.odk.collect.android.preferences.AutoSendPreferenceMigrator;
 import org.odk.collect.android.preferences.FormMetadataMigrator;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
+import org.odk.collect.android.tasks.RefreshAllFormsTask;
+import org.odk.collect.android.utilities.AssetHandler;
 import org.odk.collect.android.utilities.AuthDialogUtility;
 import org.odk.collect.android.utilities.LocaleHelper;
 import org.odk.collect.android.utilities.PRNGFixes;
@@ -252,6 +254,24 @@ public class Collect extends Application implements HasActivityInjector {
     public void hideKeyboard(View view) {
         InputMethodManager imm = (InputMethodManager) getInstance().getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    /**
+     * This method uses the DeleteFormsTask to delete forms that have been diskSynced to the db
+     * @throws RuntimeException
+     * @author soppela.jyri@gmail.com
+     */
+    public void refreshForms() throws RuntimeException {
+        String cardstatus = Environment.getExternalStorageState();
+
+        if (!cardstatus.equals(Environment.MEDIA_MOUNTED)) {
+            throw new RuntimeException(Collect.getInstance().getString(R.string.sdcard_unmounted, cardstatus));
+        }
+
+        RefreshAllFormsTask mRefreshAllFormsTask = new RefreshAllFormsTask();
+        mRefreshAllFormsTask
+                .setContentResolver(this.getBaseContext().getContentResolver());
+        mRefreshAllFormsTask.execute();
     }
 
     @Override
