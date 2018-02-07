@@ -57,10 +57,15 @@ import java.io.OutputStream;
 public class AssetHandler extends AsyncTask<String, Integer, Integer>{
 
     private final String TAG = "AssetHandler";
-    private static Context context=Collect.getInstance().getBaseContext();
+    //private static Context context=Collect.getApplicationContext();
     private String rootpath;
     private AssetManager manager;
     private Integer filesHandled = 0;
+    private Context context;
+
+    public AssetHandler(Context ct) {
+        this.context=ct;
+    }
 
     @Override
     protected Integer doInBackground(String... params) {

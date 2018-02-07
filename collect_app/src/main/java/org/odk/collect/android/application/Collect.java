@@ -261,7 +261,7 @@ public class Collect extends Application implements HasActivityInjector {
      * @throws RuntimeException
      * @author soppela.jyri@gmail.com
      */
-    public void refreshForms() throws RuntimeException {
+    public static void refreshForms(Context c) throws RuntimeException {
         String cardstatus = Environment.getExternalStorageState();
 
         if (!cardstatus.equals(Environment.MEDIA_MOUNTED)) {
@@ -270,7 +270,9 @@ public class Collect extends Application implements HasActivityInjector {
 
         RefreshAllFormsTask mRefreshAllFormsTask = new RefreshAllFormsTask();
         mRefreshAllFormsTask
-                .setContentResolver(this.getBaseContext().getContentResolver());
+                .setContentResolver(c.getContentResolver());
+        mRefreshAllFormsTask
+                .setContext(c);
         mRefreshAllFormsTask.execute();
     }
 

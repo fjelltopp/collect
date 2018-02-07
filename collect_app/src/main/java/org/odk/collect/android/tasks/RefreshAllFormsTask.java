@@ -15,6 +15,7 @@
 package org.odk.collect.android.tasks;
 
 import android.content.ContentResolver;
+import android.content.Context;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 public class RefreshAllFormsTask extends AsyncTask<Void, Void, Integer> implements DeleteFormsListener {
     private final String TAG = "RefreshAllFormsTask";
     private ContentResolver cr;
+    private Context ct;
     private ArrayList<Long> allFormsList = new ArrayList<Long>();
     private Long[] allForms;
     DeleteFormsTask mDeleteFormsTask;
@@ -82,13 +84,14 @@ public class RefreshAllFormsTask extends AsyncTask<Void, Void, Integer> implemen
     }
 
     protected void onPostExecute(Integer result) {
-        // delete forms from memory if current build has reinstall_forms set to Y
+        // delete forms from memory if current build has FORMS_CLEANUP build config set to True
         if (BuildConfig.FORMS_CLEANUP) {
             mDeleteFormsTask.execute(allForms);
         }
-        new AssetHandler().execute(Collect.ODK_ROOT,Collect.FORMS_PATH);
+        new AssetHandler(ct).execute(Collect.ODK_ROOT,"forms");
     }
 
+    public void setContext(Context context) {ct = context; }
 
     public void setContentResolver(ContentResolver resolver){
         cr = resolver;

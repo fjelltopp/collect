@@ -106,6 +106,14 @@ public class SplashScreenActivity extends Activity {
         if (firstRun || showSplash) {
             editor.putBoolean(PreferenceKeys.KEY_FIRST_RUN, false);
             editor.commit();
+
+            //refresh forms from assets
+            try {
+                Collect.refreshForms(getApplicationContext());
+            } catch (RuntimeException e) {
+                createErrorDialog(e.getMessage(), EXIT);
+            }
+
             startSplashScreen(splashPath);
         } else {
             endSplashScreen();
