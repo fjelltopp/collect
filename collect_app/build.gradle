@@ -119,16 +119,22 @@ android {
         }
     }
 
-    flavorDimensions "COUNTRY", "APPLICATION"
+    flavorDimensions "PARTNER"
 
     productFlavors {
         nutrition {
-            dimension "APPLICATION"
+            dimension "PARTNER"
             buildConfigField "String", "ODK_ROOT_FOLDER", "\"odk_nutrition\""
             applicationId('org.odk.collect.android')
         }
-        somalia {
-            dimension "COUNTRY"
+        somaliland {
+            dimension "PARTNER"
+        }
+        puntland {
+            dimension "PARTNER"
+        }
+        southcentral {
+            dimension "PARTNER"
         }
 
     }
