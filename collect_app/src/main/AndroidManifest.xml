@@ -298,6 +298,16 @@ the specific language governing permissions and limitations under the License.
                 android:name="android.accounts.AccountAuthenticator"
                 android:resource="@xml/syncadapter" />
         </service>
+        <service
+            android:name="org.odk.collect.android.syncadapter.SyncService"
+            android:exported="true"
+            android:process=":sync">
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter"/>
+            </intent-filter>
+            <meta-data android:name="android.content.SyncAdapter"
+                android:resource="@xml/syncadapter" />
+        </service>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
