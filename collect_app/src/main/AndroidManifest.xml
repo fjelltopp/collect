@@ -41,6 +41,10 @@ the specific language governing permissions and limitations under the License.
     <!-- Get permission for reliable local dispatching on non-Google Play devices. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Get permission for SyncAdapter functions. -->
+    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS"/>
+    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS"/>
+    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS"/>
 
     <uses-feature
         android:name="android.hardware.camera"
@@ -67,6 +71,7 @@ the specific language governing permissions and limitations under the License.
 
     <uses-permission android:name="org.odk.collect.android.permission.MAPS_RECEIVE" />
     <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
+
 
     <supports-screens
         android:anyDensity="true"
