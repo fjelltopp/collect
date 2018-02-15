@@ -25,23 +25,24 @@ import android.view.View;
 
 import org.odk.collect.android.R;
 
+import static org.odk.collect.android.preferences.PreferenceKeys.KEY_ALLOW_FORM_SYNC;
 import static org.odk.collect.android.preferences.PreferenceKeys.KEY_PROTOCOL;
 
 
-public class ServerPreferences extends ServerPreferencesFragment implements Preference.OnPreferenceChangeListener {
+public class SyncPreferences extends ServerPreferencesFragment implements Preference.OnPreferenceChangeListener {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        addPreferencesFromResource(R.xml.server_preferences);
+        addPreferencesFromResource(R.xml.sync_preferences);
 
-        initProtocolPrefs();
+        initSyncPrefs();
     }
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        toolbar.setTitle(R.string.server_preferences);
+        toolbar.setTitle(R.string.sync_preferences);
     }
 
     @Override
@@ -52,47 +53,22 @@ public class ServerPreferences extends ServerPreferencesFragment implements Pref
         }
     }
 
-    private void initProtocolPrefs() {
-        ListPreference protocolPref = (ListPreference) findPreference(KEY_PROTOCOL);
+    private void initSyncPrefs() {
+        final ListPreference sync = (ListPreference) findPreference(KEY_ALLOW_FORM_SYNC);
 
-        protocolPref.setSummary(protocolPref.getEntry());
-        protocolPref.setOnPreferenceChangeListener(this);
-
-        addPreferencesResource(protocolPref.getValue());
-    }
-
-    private void addPreferencesResource(CharSequence value) {
-        if (value == null || value.equals(getString(R.string.protocol_odk_default))) {
-            setDefaultAggregatePaths();
-            addAggregatePreferences();
-        } else if (value.equals(getString(R.string.protocol_google_sheets))) {
-            addGooglePreferences();
-        } else {
-            // other
-            addOtherPreferences();
+        if (sync == null) {
+            return;
         }
-    }
 
-    @Override
-    public boolean onPreferenceChange(Preference preference, Object newValue) {
-        super.onPreferenceChange(preference, newValue);
-
-        if (preference.getKey().equals(KEY_PROTOCOL)) {
-            String stringValue = (String) newValue;
-            ListPreference lpref = (ListPreference) preference;
-            String oldValue = lpref.getValue();
-            lpref.setValue(stringValue);
-
-            if (!newValue.equals(oldValue)) {
-                removeTypeSettings();
-                initProtocolPrefs();
+        sync.setSummary(sync.getEntry());
+        sync.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(Preference preference, Object newValue) {
+                int index = ((ListPreference) preference).findIndexOfValue(newValue.toString());
+                String entry = (String) ((ListPreference) preference).getEntries()[index];
+                preference.setSummary(entry);
+                return true;
             }
-        }
-        return true;
-    }
-
-    private void removeTypeSettings() {
-        getPreferenceScreen().removeAll();
-        addPreferencesFromResource(R.xml.server_preferences);
+        });
     }
 }
