@@ -71,24 +71,27 @@ public class AssetHandler extends AsyncTask<String, Integer, Integer>{
     protected Integer doInBackground(String... params) {
         this.rootpath=params[0];
         this.manager=context.getAssets();
-        copyAsset(params[1]);
+        copyAsset(params[1], true);
         return 0;
     }
 
     // recursive method to go through files
-    private void copyAsset(String path) {
+    private void copyAsset(String path, Boolean root) {
         String assets[] = null;
         try {
             assets = manager.list(path);
-            if (assets.length == 0) {
+            if (assets.length == 0 && !root) {
                 copyFile(path);
-            } else {
+            } else if (assets.length == 0 && root) {
+                Log.w(TAG, "No prepackaged forms to install");
+            }
+            else {
                 String fullPath = rootpath + File.separator + path;
                 File dir = new File(fullPath);
                 if (!dir.exists())
                     dir.mkdir();
                 for (int i = 0; i < assets.length; ++i) {
-                    copyAsset(path + File.separator + assets[i]);
+                    copyAsset(path + File.separator + assets[i], false);
                 }
             }
         } catch (IOException ex) {
