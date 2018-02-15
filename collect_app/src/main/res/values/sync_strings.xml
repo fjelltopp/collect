@@ -1,3 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- strings for form synchronization -->
+    <string name="sync_preferences">Synchronization preferences</string>
+    <string name="allow_form_sync_summary">Allow auto-update of forms from server</string>
+    <string name="allow_form_sync">Allow form synchronization</string>
+    <string name="default_form_sync_url" translatable="false"></string>
+    <string name="form_sync_url">Synchronization URL</string>
+    <string name="sync_interval_summary">Synchronization interval in minutes</string>
+    <string name="sync_interval">Synchronization interval</string>
+    <string name="last_update">Last synchronization performed</string>
+    <string name="force_update">Force synchronize forms and application</string>
+    <string name="force_update_summary">Attempt synchronization immediately</string>
 </resources>
