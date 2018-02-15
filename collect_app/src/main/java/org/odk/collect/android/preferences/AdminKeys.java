@@ -88,7 +88,8 @@ public final class AdminKeys {
             ag(KEY_SHOW_MAP_SDK,               PreferenceKeys.KEY_MAP_SDK),
             ag(KEY_SHOW_MAP_BASEMAP,           PreferenceKeys.KEY_MAP_BASEMAP),
 
-            ag(KEY_ANALYTICS,                  PreferenceKeys.KEY_ANALYTICS)
+            ag(KEY_ANALYTICS,                  PreferenceKeys.KEY_ANALYTICS),
+
     };
 
     /** Admin keys other than those in adminToGeneral above */
@@ -129,6 +130,15 @@ public final class AdminKeys {
     );
 
     static Collection<String> userInterfaceKeys = Arrays.asList(
+            KEY_APP_LANGUAGE,
+            KEY_CHANGE_FONT_SIZE,
+            KEY_NAVIGATION,
+            KEY_SHOW_SPLASH_SCREEN,
+            KEY_SHOW_MAP_BASEMAP,
+            KEY_SHOW_MAP_SDK
+    );
+
+    static Collection<String> syncKeys = Arrays.asList(
             KEY_APP_LANGUAGE,
             KEY_CHANGE_FONT_SIZE,
             KEY_NAVIGATION,

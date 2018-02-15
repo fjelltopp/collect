@@ -62,6 +62,10 @@ public class PreferencesActivity extends PreferenceActivity {
             if (hasAtleastOneSettingEnabled(AdminKeys.identityKeys)) {
                 loadHeadersFromResource(R.xml.user_device_identity_preference_header, target);
             }
+
+            if (hasAtleastOneSettingEnabled(AdminKeys.syncKeys)) {
+                loadHeadersFromResource(R.xml.sync_preference_headers, target);
+            }
         }
     }
 

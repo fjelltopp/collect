@@ -52,6 +52,13 @@ public final class PreferenceKeys {
     public static final String KEY_MAP_SDK                  = "map_sdk_behavior";
     public static final String KEY_MAP_BASEMAP              = "map_basemap_behavior";
 
+    // synchronisation_preferences.xml
+    public static final String KEY_FORM_SYNC_URL            = "form_sync_url";
+    public static final String KEY_ALLOW_FORM_SYNC          = "allow_form_sync";
+    public static final String KEY_SYNC_INTERVAL            = "sync_interval";
+    public static final String KEY_LAST_UPDATE              = "last_update";
+    public static final String KEY_FORCE_UPDATE             = "force_update";
+
     // other keys
     public static final String KEY_LAST_VERSION             = "lastVersion";
     public static final String KEY_FIRST_RUN                = "firstRun";
@@ -105,6 +112,8 @@ public final class PreferenceKeys {
         hashMap.put(KEY_SPLASH_PATH,                Collect.getInstance().getString(R.string.default_splash_path));
         hashMap.put(KEY_MAP_SDK,                    GOOGLE_MAPS);
         hashMap.put(KEY_MAP_BASEMAP,                GOOGLE_MAPS_BASEMAP_DEFAULT);
+        // sync_preferences.xml
+        hashMap.put(KEY_ALLOW_FORM_SYNC,               true);
         return hashMap;
     }
 
