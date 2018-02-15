@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <preference-headers xmlns:android="http://schemas.android.com/apk/res/android">
     <header
-        android:fragment="org.odk.collect.android.preferences.UserInterfacePreferences"
+        android:fragment="org.odk.collect.android.preferences.SyncPreferences"
         android:icon="@drawable/ic_phonelink_setup"
-        android:key="@string/client"
-        android:title="@string/client" />
+        android:key="@string/sync_preferences"
+        android:title="@string/sync_preferences" />
 </preference-headers>
