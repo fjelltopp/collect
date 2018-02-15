@@ -97,6 +97,11 @@ the specific language governing permissions and limitations under the License.
             android:name=".provider.InstanceProvider"
             android:authorities="org.odk.collect.android.provider.odk.instances"
             android:exported="true" />
+        <provider
+            android:name=".provider.SyncProvider"
+            android:authorities="org.odk.collect.android.provider.odk.sync"
+            android:syncable="true"
+            android:exported="true" />
 
         <activity
             android:name=".activities.MainMenuActivity"
@@ -296,7 +301,7 @@ the specific language governing permissions and limitations under the License.
             </intent-filter>
             <meta-data
                 android:name="android.accounts.AccountAuthenticator"
-                android:resource="@xml/syncadapter" />
+                android:resource="@xml/sync_authenticator" />
         </service>
         <service
             android:name="org.odk.collect.android.syncadapter.SyncService"
@@ -306,7 +311,7 @@ the specific language governing permissions and limitations under the License.
                 <action android:name="android.content.SyncAdapter"/>
             </intent-filter>
             <meta-data android:name="android.content.SyncAdapter"
-                android:resource="@xml/syncadapter" />
+                android:resource="@xml/sync_service" />
         </service>
 
         <meta-data
