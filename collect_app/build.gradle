@@ -125,7 +125,7 @@ android {
         nutrition {
             dimension "PARTNER"
             buildConfigField "String", "ODK_ROOT_FOLDER", "\"odk_nutrition\""
-            applicationId('org.odk.collect.android')
+            applicationIdSuffix ".nutrition"
         }
         somaliland {
             dimension "PARTNER"
@@ -311,7 +311,7 @@ dependencies {
 
 // Must be at bottom to prevent dependency collisions
 // https://developers.google.com/android/guides/google-services-plugin
-apply plugin: 'com.google.gms.google-services'
+// apply plugin: 'com.google.gms.google-services'
 
 
 
