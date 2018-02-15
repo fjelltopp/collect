@@ -91,15 +91,15 @@ the specific language governing permissions and limitations under the License.
         android:theme="@style/AppThemeBase.Collect">
         <provider
             android:name=".provider.FormsProvider"
-            android:authorities="org.odk.collect.android.provider.odk.forms"
+            android:authorities="${applicationId}.provider.odk.forms"
             android:exported="true" />
         <provider
             android:name=".provider.InstanceProvider"
-            android:authorities="org.odk.collect.android.provider.odk.instances"
+            android:authorities="${applicationId}.provider.odk.instances"
             android:exported="true" />
         <provider
             android:name=".provider.SyncProvider"
-            android:authorities="org.odk.collect.android.provider.odk.sync"
+            android:authorities="${applicationId}.provider.odk.sync"
             android:syncable="true"
             android:exported="true" />
 
