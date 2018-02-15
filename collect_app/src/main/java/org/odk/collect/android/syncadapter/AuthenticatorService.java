@@ -13,7 +13,6 @@ import android.os.IBinder;
  * when started.
  */
 public class AuthenticatorService extends Service {
-    ...
     // Instance field that stores the authenticator object
     private Authenticator mAuthenticator;
     @Override
