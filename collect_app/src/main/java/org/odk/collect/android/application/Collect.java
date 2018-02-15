@@ -14,12 +14,16 @@
 
 package org.odk.collect.android.application;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.Application;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
@@ -49,6 +53,7 @@ import org.odk.collect.android.preferences.AdminSharedPreferences;
 import org.odk.collect.android.preferences.AutoSendPreferenceMigrator;
 import org.odk.collect.android.preferences.FormMetadataMigrator;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
+import org.odk.collect.android.syncadapter.SyncUtils;
 import org.odk.collect.android.tasks.RefreshAllFormsTask;
 import org.odk.collect.android.utilities.AssetHandler;
 import org.odk.collect.android.utilities.AuthDialogUtility;
@@ -74,6 +79,7 @@ import static org.odk.collect.android.logic.PropertyManager.SCHEME_USERNAME;
 import static org.odk.collect.android.preferences.PreferenceKeys.KEY_APP_LANGUAGE;
 import static org.odk.collect.android.preferences.PreferenceKeys.KEY_FONT_SIZE;
 import static org.odk.collect.android.preferences.PreferenceKeys.KEY_USERNAME;
+import static org.odk.collect.android.syncadapter.SyncUtils.CreateSyncAccount;
 
 /**
  * The Open Data Kit Collect application.
@@ -306,6 +312,10 @@ public class Collect extends Application implements HasActivityInjector {
         } else {
             Timber.plant(new Timber.DebugTree());
         }
+
+        //adds Synchronization account if it has not yet been added
+        Account account = CreateSyncAccount(this.getApplicationContext());
+        SyncUtils.InitSync(account);
 
         setupLeakCanary();
     }
