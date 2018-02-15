@@ -402,9 +402,9 @@ public class MainMenuActivity extends AppCompatActivity {
             }
         }
 
-        ((Collect) getApplication())
-                .getDefaultTracker()
-                .enableAutoActivityTracking(true);
+        //((Collect) getApplication())
+        //        .getDefaultTracker()
+        //        .enableAutoActivityTracking(true);
     }
 
     @Override
