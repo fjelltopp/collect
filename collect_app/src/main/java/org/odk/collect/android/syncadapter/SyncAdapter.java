@@ -159,6 +159,9 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 
 	    	Log.i(TAG, "Synchronization finished");
     	}
+    	else {
+    	    Log.i(TAG, "Sync disabled");
+        }
     }
     
     private void syncFileTree(final URL url, final File folder, boolean forceSync, SyncResult syncResult) throws IOException {
