@@ -344,13 +344,14 @@ public class Collect extends Application implements HasActivityInjector {
      *
      * @return tracker
      */
+    /**
     public synchronized Tracker getDefaultTracker() {
         if (tracker == null) {
             GoogleAnalytics analytics = GoogleAnalytics.getInstance(this);
             tracker = analytics.newTracker(R.xml.global_tracker);
         }
         return tracker;
-    }
+    }*/
 
 
     private static class CrashReportingTree extends Timber.Tree {
