@@ -1,0 +1,642 @@
+<?xml version="1.0"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa" xmlns:orx="http://openrosa.org/xforms" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <h:head>
+    <h:title>Foomka Warbixinta Maalinlaha</h:title>
+    <model>
+      <itext>
+        <translation default="true()" lang="default">
+          <text id="/somalia_register/staff./community_worker:label">
+            <value>Adeegyada Cafimaadka Bulshaada</value>
+          </text>
+          <text id="/somalia_register/other./hiv:label">
+            <value>Geli tirada HIV la baray manta:</value>
+          </text>
+          <text id="/somalia_register/vaccinations./ipv:label">
+            <value>Tirada tallaalka dabaysha irbadda ah</value>
+          </text>
+          <text id="/somalia_register/closed/vaccination:label">
+            <value>Kaqeeyb gal talaal</value>
+          </text>
+          <text id="/somalia_register/new_staff/no:label">
+            <value>Maya</value>
+          </text>
+          <text id="/somalia_register/new_staff/yes:label">
+            <value>Haa</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-02:label">
+            <value>Magnesium trisilicate compound tabs</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-10:label">
+            <value>Paracetamol 100mg tabs</value>
+          </text>
+          <text id="/somalia_register/new_supp:label">
+            <value>Agabta Cafimaadka</value>
+          </text>
+          <text id="/somalia_register/visit_date:label">
+            <value>MOH|DIIWAANKA MAALINLAHA
+Select Date &amp; Time:</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-14:label">
+            <value>Zinc 20mg tablets</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-12:label">
+            <value>Povidone iodine sol 10%</value>
+          </text>
+          <text id="/somalia_register/closed/other:label">
+            <value>Mid Kale</value>
+          </text>
+          <text id="/somalia_register/closed/sick:label">
+            <value>Fasax xanuu/shaqa kamaqnaasho xanuun dartii</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-15:label">
+            <value>Artem 20mg+Lumef120mg disp tabs</value>
+          </text>
+          <text id="/somalia_register/new_supp/yes:label">
+            <value>Haa</value>
+          </text>
+          <text id="/somalia_register/open:label">
+            <value>MOH|DIIWAANKA MAALINLAHA
+
+Xarunta ma furantahay Maanta?</value>
+          </text>
+          <text id="/somalia_register/open/yes:label">
+            <value>Haa</value>
+          </text>
+          <text id="/somalia_register/new_supp/no:label">
+            <value>Maya</value>
+          </text>
+          <text id="/somalia_register/other./new_supp_staff:label">
+            <value>Agab/ Shaqaalo loo bahanahy?</value>
+          </text>
+          <text id="/somalia_register/vaccinations./penta3:label">
+            <value>Penta 3</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-07:label">
+            <value>Ibuprofen 400mg tabs/PAC-100</value>
+          </text>
+          <text id="/somalia_register/open/no:label">
+            <value>Maya</value>
+          </text>
+          <text id="/somalia_register/vtotal:label">
+            <value>Geli tirada la talaalay maanta</value>
+          </text>
+          <text id="/somalia_register/consultations./preganant:label">
+            <value>Tirada Haweenka uurka leh</value>
+          </text>
+          <text id="/somalia_register/other./rdt:label">
+            <value>Geli tirade baaritaanka duumada RTD lasameeye manta:</value>
+          </text>
+          <text id="/somalia_register/staff./lab_assist:label">
+            <value>Kalkaliye Sheybarka</value>
+          </text>
+          <text id="/somalia_register/closed:label">
+            <value>Hadii aysan furneyn, sheeg sababta xirnaanshaha?</value>
+          </text>
+          <text id="/somalia_register/staff./nurse:label">
+            <value>Nurse</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-04:label">
+            <value>benzyl benzoate, lotion 25%</value>
+          </text>
+          <text id="/somalia_register/consultations./child_5:label">
+            <value>Tirada 5 sanno ka yar</value>
+          </text>
+          <text id="/somalia_register/consultations./outside_district:label">
+            <value>Tirada dadka ka yimid banaanka magalada ama degmada</value>
+          </text>
+          <text id="/somalia_register/new_staff:label">
+            <value>Shaqalada Cafimaaadka</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-11:label">
+            <value>Paracetamol 500mg tabs</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-09:label">
+            <value>ORS low osm. 20.5g/1L CAR</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-03:label">
+            <value>Amoxicillin 250mg disp.tab</value>
+          </text>
+          <text id="/somalia_register/vaccinations./penta1:label">
+            <value>Penta 1</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-05:label">
+            <value>chlorhexidine gluconate, solution 5%</value>
+          </text>
+          <text id="/somalia_register/other./new_supp_staff/yes:label">
+            <value>Haa</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-01:label">
+            <value>Albendazole 400mg chewable tabs</value>
+          </text>
+          <text id="/somalia_register/closed/training:label">
+            <value>Tababar ayaa socda</value>
+          </text>
+          <text id="/somalia_register/consultations./women:label">
+            <value>Tirada Haweenka</value>
+          </text>
+          <text id="/somalia_register/closed/vacation:label">
+            <value>Fasax dalxiis</value>
+          </text>
+          <text id="/somalia_register/other./new_supp_staff/no:label">
+            <value>Maya</value>
+          </text>
+          <text id="/somalia_register/staff./doctor:label">
+            <value>Doctor</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-13:label">
+            <value>Tetracycline eye ointment 1%</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-06:label">
+            <value>Fe(as fum.)+folic 60+0.4mg tab</value>
+          </text>
+          <text id="/somalia_register/supp.:label">
+            <value>Alabta Cafimaadka loogu
+Tala galay Xalada Degdegah</value>
+          </text>
+          <text id="/somalia_register/vaccinations./measles:label">
+            <value>Tirada talaalka jadeecada</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-08:label">
+            <value>Miconazole nitrate cream 2%</value>
+          </text>
+          <text id="/somalia_register/consultations./child_10:label">
+            <value>Tirada 5-10 sanno ka yar</value>
+          </text>
+          <text id="/somalia_register/consultations./total:label">
+            <value>Geli tirada talasiinta manta ladiwaan galiyey:</value>
+          </text>
+          <text id="/somalia_register/vaccinations./children:label">
+            <value>Tirada 1 sanno ka yar</value>
+          </text>
+          <text id="/somalia_register/visit_date:jr:constraintMsg">
+            <value>Taariikhihii lasoo dhaafay umbaa la’ogolyahay</value>
+          </text>
+        </translation>
+        <translation lang="english">
+          <text id="/somalia_register/staff./community_worker:label">
+            <value>Communiry Health Worker</value>
+          </text>
+          <text id="/somalia_register/other./hiv:label">
+            <value>Enter total number of HIV test performed today:</value>
+          </text>
+          <text id="/somalia_register/vaccinations./ipv:label">
+            <value>How many of IPV</value>
+          </text>
+          <text id="/somalia_register/closed/vaccination:label">
+            <value>Attending vaccination</value>
+          </text>
+          <text id="/somalia_register/new_staff/no:label">
+            <value>No</value>
+          </text>
+          <text id="/somalia_register/new_staff/yes:label">
+            <value>Yes</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-02:label">
+            <value>Magnesium trisilicate compound tabs</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-10:label">
+            <value>Paracetamol 100mg tabs</value>
+          </text>
+          <text id="/somalia_register/new_supp:label">
+            <value>Medical Supplies</value>
+          </text>
+          <text id="/somalia_register/visit_date:label">
+            <value>MOH | DAILY CONSULTATIONS
+Select Date &amp; Time:</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-14:label">
+            <value>Zinc 20mg tablets</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-12:label">
+            <value>Povidone iodine sol 10%</value>
+          </text>
+          <text id="/somalia_register/closed/other:label">
+            <value>Other</value>
+          </text>
+          <text id="/somalia_register/closed/sick:label">
+            <value>Sick leave</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-15:label">
+            <value>Artem 20mg+Lumef120mg disp tabs</value>
+          </text>
+          <text id="/somalia_register/new_supp/yes:label">
+            <value>Yes</value>
+          </text>
+          <text id="/somalia_register/open:label">
+            <value>MOH | DAILY CONSULTATIONS
+
+Was the facility open today?</value>
+          </text>
+          <text id="/somalia_register/open/yes:label">
+            <value>Yes</value>
+          </text>
+          <text id="/somalia_register/new_supp/no:label">
+            <value>No</value>
+          </text>
+          <text id="/somalia_register/other./new_supp_staff:label">
+            <value>New Supply / Staffing needs?</value>
+          </text>
+          <text id="/somalia_register/vaccinations./penta3:label">
+            <value>How many of Penta 3</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-07:label">
+            <value>Ibuprofen 400mg tabs/PAC-100</value>
+          </text>
+          <text id="/somalia_register/open/no:label">
+            <value>No</value>
+          </text>
+          <text id="/somalia_register/vtotal:label">
+            <value>Enter total number of vaccinations performed today:</value>
+          </text>
+          <text id="/somalia_register/consultations./preganant:label">
+            <value>How many were pregnant women</value>
+          </text>
+          <text id="/somalia_register/other./rdt:label">
+            <value>Enter total number of Malaria RDT test performed today</value>
+          </text>
+          <text id="/somalia_register/staff./lab_assist:label">
+            <value>Laboratury Assistant</value>
+          </text>
+          <text id="/somalia_register/closed:label">
+            <value>Reason for closure?</value>
+          </text>
+          <text id="/somalia_register/staff./nurse:label">
+            <value>Nurse</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-04:label">
+            <value>benzyl benzoate, lotion 25%</value>
+          </text>
+          <text id="/somalia_register/consultations./child_5:label">
+            <value>How many were children &lt; 5 years</value>
+          </text>
+          <text id="/somalia_register/consultations./outside_district:label">
+            <value>How many were patients from outside district</value>
+          </text>
+          <text id="/somalia_register/new_staff:label">
+            <value>Medical Staffing</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-11:label">
+            <value>Paracetamol 500mg tabs</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-09:label">
+            <value>ORS low osm. 20.5g/1L CAR</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-03:label">
+            <value>Amoxicillin 250mg disp.tab</value>
+          </text>
+          <text id="/somalia_register/vaccinations./penta1:label">
+            <value>How many of Penta 1</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-05:label">
+            <value>chlorhexidine gluconate, solution 5%</value>
+          </text>
+          <text id="/somalia_register/other./new_supp_staff/yes:label">
+            <value>Yes</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-01:label">
+            <value>Albendazole 400mg chewable tabs</value>
+          </text>
+          <text id="/somalia_register/closed/training:label">
+            <value>Attending training</value>
+          </text>
+          <text id="/somalia_register/consultations./women:label">
+            <value>How many were women</value>
+          </text>
+          <text id="/somalia_register/closed/vacation:label">
+            <value>On vacation</value>
+          </text>
+          <text id="/somalia_register/other./new_supp_staff/no:label">
+            <value>No</value>
+          </text>
+          <text id="/somalia_register/staff./doctor:label">
+            <value>Doctor</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-13:label">
+            <value>Tetracycline eye ointment 1%</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-06:label">
+            <value>Fe(as fum.)+folic 60+0.4mg tab</value>
+          </text>
+          <text id="/somalia_register/supp.:label">
+            <value>Content list IEHK kit</value>
+          </text>
+          <text id="/somalia_register/vaccinations./measles:label">
+            <value>How many of today's vaccinations were measles</value>
+          </text>
+          <text id="/somalia_register/supp./IEHK2011-BU-01-08:label">
+            <value>Miconazole nitrate cream 2%</value>
+          </text>
+          <text id="/somalia_register/consultations./child_10:label">
+            <value>How many were children 5-10 years</value>
+          </text>
+          <text id="/somalia_register/consultations./total:label">
+            <value>Enter total number of consultations today:</value>
+          </text>
+          <text id="/somalia_register/vaccinations./children:label">
+            <value>How many of the patients vaccinated today were children &lt; 1y</value>
+          </text>
+          <text id="/somalia_register/visit_date:jr:constraintMsg">
+            <value>Only past dates allowed</value>
+          </text>
+        </translation>
+      </itext>
+      <instance>
+        <somalia_register id="somalia_register" version="2">
+          <start/>
+          <end/>
+          <today/>
+          <deviceid/>
+          <subscriberid/>
+          <simid/>
+          <phonenumber/>
+          <visit_date/>
+          <open/>
+          <consultations.>
+            <total/>
+            <child_5/>
+            <child_10/>
+            <women/>
+            <preganant/>
+            <outside_district/>
+          </consultations.>
+          <vtotal/>
+          <vaccinations.>
+            <children/>
+            <measles/>
+            <penta1/>
+            <penta3/>
+            <ipv/>
+          </vaccinations.>
+          <other.>
+            <rdt/>
+            <hiv/>
+            <new_supp_staff/>
+          </other.>
+          <new_supp/>
+          <supp.>
+            <IEHK2011-BU-01-01/>
+            <IEHK2011-BU-01-02/>
+            <IEHK2011-BU-01-03/>
+            <IEHK2011-BU-01-04/>
+            <IEHK2011-BU-01-05/>
+            <IEHK2011-BU-01-06/>
+            <IEHK2011-BU-01-07/>
+            <IEHK2011-BU-01-08/>
+            <IEHK2011-BU-01-09/>
+            <IEHK2011-BU-01-10/>
+            <IEHK2011-BU-01-11/>
+            <IEHK2011-BU-01-12/>
+            <IEHK2011-BU-01-13/>
+            <IEHK2011-BU-01-14/>
+            <IEHK2011-BU-01-15/>
+          </supp.>
+          <new_staff/>
+          <staff.>
+            <nurse/>
+            <lab_assist/>
+            <community_worker/>
+            <doctor/>
+          </staff.>
+          <closed/>
+          <meta>
+            <instanceID/>
+          </meta>
+        </somalia_register>
+      </instance>
+      <bind jr:preload="timestamp" jr:preloadParams="start" nodeset="/somalia_register/start" type="dateTime"/>
+      <bind jr:preload="timestamp" jr:preloadParams="end" nodeset="/somalia_register/end" type="dateTime"/>
+      <bind jr:preload="date" jr:preloadParams="today" nodeset="/somalia_register/today" type="date"/>
+      <bind jr:preload="property" jr:preloadParams="deviceid" nodeset="/somalia_register/deviceid" type="string"/>
+      <bind jr:preload="property" jr:preloadParams="subscriberid" nodeset="/somalia_register/subscriberid" type="string"/>
+      <bind jr:preload="property" jr:preloadParams="simserial" nodeset="/somalia_register/simid" type="string"/>
+      <bind jr:preload="property" jr:preloadParams="phonenumber" nodeset="/somalia_register/phonenumber" type="string"/>
+      <bind constraint=". &lt;= today()" jr:constraintMsg="jr:itext('/somalia_register/visit_date:jr:constraintMsg')" nodeset="/somalia_register/visit_date" required="true()" type="date"/>
+      <bind nodeset="/somalia_register/open" required="true()" type="select1"/>
+      <bind nodeset="/somalia_register/consultations." relevant=" /somalia_register/open =&quot;yes&quot;" required="true()"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/consultations./total" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/consultations./child_5" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/consultations./child_10" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/consultations./women" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/consultations./preganant" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/consultations./outside_district" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/vtotal" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind nodeset="/somalia_register/vaccinations." relevant=" /somalia_register/vtotal &gt;0" required="true()"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/vaccinations./children" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/vaccinations./measles" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/vaccinations./penta1" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind constraint="(. +  /somalia_register/vaccinations./penta1 ) &lt;  /somalia_register/vtotal " nodeset="/somalia_register/vaccinations./penta3" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/vaccinations./ipv" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind nodeset="/somalia_register/other." relevant=" /somalia_register/open =&quot;yes&quot;" required="true()"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/other./rdt" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/other./hiv" relevant=" /somalia_register/open =&quot;yes&quot;" type="int"/>
+      <bind nodeset="/somalia_register/other./new_supp_staff" relevant=" /somalia_register/open =&quot;yes&quot;" required="true()" type="select1"/>
+      <bind nodeset="/somalia_register/new_supp" relevant=" /somalia_register/other./new_supp_staff =&quot;yes&quot;" required="true()" type="select1"/>
+      <bind nodeset="/somalia_register/supp." relevant=" /somalia_register/new_supp =&quot;yes&quot;" required="true()"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-01" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-02" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-03" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-04" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-05" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-06" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-07" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-08" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-09" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-10" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-11" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-12" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-13" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-14" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/supp./IEHK2011-BU-01-15" type="int"/>
+      <bind nodeset="/somalia_register/new_staff" relevant=" /somalia_register/other./new_supp_staff =&quot;yes&quot;" required="true()" type="select1"/>
+      <bind nodeset="/somalia_register/staff." relevant=" /somalia_register/new_staff =&quot;yes&quot;"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/staff./nurse" relevant=" /somalia_register/open =&quot;yes&quot;" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/staff./lab_assist" relevant=" /somalia_register/open =&quot;yes&quot;" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/staff./community_worker" relevant=" /somalia_register/open =&quot;yes&quot;" type="int"/>
+      <bind constraint=".&gt;-1" nodeset="/somalia_register/staff./doctor" relevant=" /somalia_register/open =&quot;yes&quot;" type="int"/>
+      <bind nodeset="/somalia_register/closed" relevant=" /somalia_register/open =&quot;no&quot;" required="true()" type="select1"/>
+      <bind calculate="concat('uuid:', uuid())" nodeset="/somalia_register/meta/instanceID" readonly="true()" type="string"/>
+    </model>
+  </h:head>
+  <h:body>
+    <input appearance="no-calendar" ref="/somalia_register/visit_date">
+      <label ref="jr:itext('/somalia_register/visit_date:label')"/>
+    </input>
+    <select1 ref="/somalia_register/open">
+      <label ref="jr:itext('/somalia_register/open:label')"/>
+      <item>
+        <label ref="jr:itext('/somalia_register/open/no:label')"/>
+        <value>no</value>
+      </item>
+      <item>
+        <label ref="jr:itext('/somalia_register/open/yes:label')"/>
+        <value>yes</value>
+      </item>
+    </select1>
+    <group appearance="field-list" ref="/somalia_register/consultations.">
+      <input ref="/somalia_register/consultations./total">
+        <label ref="jr:itext('/somalia_register/consultations./total:label')"/>
+      </input>
+      <input ref="/somalia_register/consultations./child_5">
+        <label ref="jr:itext('/somalia_register/consultations./child_5:label')"/>
+      </input>
+      <input ref="/somalia_register/consultations./child_10">
+        <label ref="jr:itext('/somalia_register/consultations./child_10:label')"/>
+      </input>
+      <input ref="/somalia_register/consultations./women">
+        <label ref="jr:itext('/somalia_register/consultations./women:label')"/>
+      </input>
+      <input ref="/somalia_register/consultations./preganant">
+        <label ref="jr:itext('/somalia_register/consultations./preganant:label')"/>
+      </input>
+      <input ref="/somalia_register/consultations./outside_district">
+        <label ref="jr:itext('/somalia_register/consultations./outside_district:label')"/>
+      </input>
+    </group>
+    <input ref="/somalia_register/vtotal">
+      <label ref="jr:itext('/somalia_register/vtotal:label')"/>
+    </input>
+    <group appearance="field-list" ref="/somalia_register/vaccinations.">
+      <input ref="/somalia_register/vaccinations./children">
+        <label ref="jr:itext('/somalia_register/vaccinations./children:label')"/>
+      </input>
+      <input ref="/somalia_register/vaccinations./measles">
+        <label ref="jr:itext('/somalia_register/vaccinations./measles:label')"/>
+      </input>
+      <input ref="/somalia_register/vaccinations./penta1">
+        <label ref="jr:itext('/somalia_register/vaccinations./penta1:label')"/>
+      </input>
+      <input ref="/somalia_register/vaccinations./penta3">
+        <label ref="jr:itext('/somalia_register/vaccinations./penta3:label')"/>
+      </input>
+      <input ref="/somalia_register/vaccinations./ipv">
+        <label ref="jr:itext('/somalia_register/vaccinations./ipv:label')"/>
+      </input>
+    </group>
+    <group appearance="field-list" ref="/somalia_register/other.">
+      <input ref="/somalia_register/other./rdt">
+        <label ref="jr:itext('/somalia_register/other./rdt:label')"/>
+      </input>
+      <input ref="/somalia_register/other./hiv">
+        <label ref="jr:itext('/somalia_register/other./hiv:label')"/>
+      </input>
+      <select1 ref="/somalia_register/other./new_supp_staff">
+        <label ref="jr:itext('/somalia_register/other./new_supp_staff:label')"/>
+        <item>
+          <label ref="jr:itext('/somalia_register/other./new_supp_staff/no:label')"/>
+          <value>no</value>
+        </item>
+        <item>
+          <label ref="jr:itext('/somalia_register/other./new_supp_staff/yes:label')"/>
+          <value>yes</value>
+        </item>
+      </select1>
+    </group>
+    <select1 ref="/somalia_register/new_supp">
+      <label ref="jr:itext('/somalia_register/new_supp:label')"/>
+      <item>
+        <label ref="jr:itext('/somalia_register/new_supp/no:label')"/>
+        <value>no</value>
+      </item>
+      <item>
+        <label ref="jr:itext('/somalia_register/new_supp/yes:label')"/>
+        <value>yes</value>
+      </item>
+    </select1>
+    <group appearance="field-list" ref="/somalia_register/supp.">
+      <label ref="jr:itext('/somalia_register/supp.:label')"/>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-01">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-01:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-02">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-02:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-03">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-03:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-04">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-04:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-05">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-05:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-06">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-06:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-07">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-07:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-08">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-08:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-09">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-09:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-10">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-10:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-11">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-11:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-12">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-12:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-13">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-13:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-14">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-14:label')"/>
+      </input>
+      <input ref="/somalia_register/supp./IEHK2011-BU-01-15">
+        <label ref="jr:itext('/somalia_register/supp./IEHK2011-BU-01-15:label')"/>
+      </input>
+    </group>
+    <select1 ref="/somalia_register/new_staff">
+      <label ref="jr:itext('/somalia_register/new_staff:label')"/>
+      <item>
+        <label ref="jr:itext('/somalia_register/new_staff/no:label')"/>
+        <value>no</value>
+      </item>
+      <item>
+        <label ref="jr:itext('/somalia_register/new_staff/yes:label')"/>
+        <value>yes</value>
+      </item>
+    </select1>
+    <group appearance="field-list" ref="/somalia_register/staff.">
+      <input ref="/somalia_register/staff./nurse">
+        <label ref="jr:itext('/somalia_register/staff./nurse:label')"/>
+      </input>
+      <input ref="/somalia_register/staff./lab_assist">
+        <label ref="jr:itext('/somalia_register/staff./lab_assist:label')"/>
+      </input>
+      <input ref="/somalia_register/staff./community_worker">
+        <label ref="jr:itext('/somalia_register/staff./community_worker:label')"/>
+      </input>
+      <input ref="/somalia_register/staff./doctor">
+        <label ref="jr:itext('/somalia_register/staff./doctor:label')"/>
+      </input>
+    </group>
+    <select1 ref="/somalia_register/closed">
+      <label ref="jr:itext('/somalia_register/closed:label')"/>
+      <item>
+        <label ref="jr:itext('/somalia_register/closed/training:label')"/>
+        <value>training</value>
+      </item>
+      <item>
+        <label ref="jr:itext('/somalia_register/closed/vaccination:label')"/>
+        <value>vaccination</value>
+      </item>
+      <item>
+        <label ref="jr:itext('/somalia_register/closed/sick:label')"/>
+        <value>sick</value>
+      </item>
+      <item>
+        <label ref="jr:itext('/somalia_register/closed/vacation:label')"/>
+        <value>vacation</value>
+      </item>
+      <item>
+        <label ref="jr:itext('/somalia_register/closed/other:label')"/>
+        <value>other</value>
+      </item>
+    </select1>
+  </h:body>
+</h:html>
