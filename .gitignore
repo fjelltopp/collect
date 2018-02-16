@@ -32,3 +32,6 @@ out/
 .externalNativeBuild/
 .navigation/
 captures/
+
+# Output files
+*/output.json
