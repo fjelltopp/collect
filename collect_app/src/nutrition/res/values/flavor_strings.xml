@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Somalia Nutrition</string>
+    <string name="default_server_url">https://ona.io</string>
+    <string name="app_url">https://ona.io</string>
+    <string name="main_menu_details">Data Collection</string>
+</resources>
