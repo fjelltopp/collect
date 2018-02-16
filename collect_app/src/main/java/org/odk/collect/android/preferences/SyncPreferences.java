@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-
+/*
 package org.odk.collect.android.preferences;
 
 import android.os.Bundle;
@@ -72,3 +72,4 @@ public class SyncPreferences extends ServerPreferencesFragment implements Prefer
         });
     }
 }
+*/

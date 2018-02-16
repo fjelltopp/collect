@@ -138,14 +138,14 @@ public final class AdminKeys {
             KEY_SHOW_MAP_SDK
     );
 
-    static Collection<String> syncKeys = Arrays.asList(
+    /** static Collection<String> syncKeys = Arrays.asList(
             KEY_APP_LANGUAGE,
             KEY_CHANGE_FONT_SIZE,
             KEY_NAVIGATION,
             KEY_SHOW_SPLASH_SCREEN,
             KEY_SHOW_MAP_BASEMAP,
             KEY_SHOW_MAP_SDK
-    );
+    );*/
 
     private static Collection<String> allKeys() {
         Collection<String> keys = new ArrayList<>();

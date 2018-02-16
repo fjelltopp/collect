@@ -59,6 +59,7 @@ public final class PreferenceKeys {
     public static final String KEY_LAST_UPDATE              = "last_update";
     public static final String KEY_FORCE_UPDATE             = "force_update";
 
+
     // other keys
     public static final String KEY_LAST_VERSION             = "lastVersion";
     public static final String KEY_FIRST_RUN                = "firstRun";
