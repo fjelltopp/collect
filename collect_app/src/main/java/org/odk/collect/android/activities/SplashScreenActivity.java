@@ -114,6 +114,13 @@ public class SplashScreenActivity extends Activity {
                 createErrorDialog(e.getMessage(), EXIT);
             }
 
+            //refresh settings from assets
+            try {
+                Collect.refreshSettings(getApplicationContext());
+            } catch (RuntimeException e) {
+                createErrorDialog(e.getMessage(), EXIT);
+            }
+
             startSplashScreen(splashPath);
         } else {
             endSplashScreen();

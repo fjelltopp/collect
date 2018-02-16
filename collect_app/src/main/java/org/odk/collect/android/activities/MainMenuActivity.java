@@ -238,7 +238,7 @@ public class MainMenuActivity extends AppCompatActivity {
                     .getVersionedAppName());
         }
 
-        File f = new File(Collect.ODK_ROOT + "/collect.settings");
+        File f = new File(Collect.ODK_ROOT + File.separator + "settings" + File.separator + "collect.settings");
         File j = new File(Collect.ODK_ROOT + "/collect.settings.json");
         // Give JSON file preference
         if (j.exists()) {

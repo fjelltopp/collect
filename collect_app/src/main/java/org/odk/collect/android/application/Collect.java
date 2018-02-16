@@ -213,7 +213,7 @@ public class Collect extends Application implements HasActivityInjector {
     public String getVersionedAppName() {
         String versionName = BuildConfig.VERSION_NAME;
         versionName = " " + versionName.replaceFirst("-", "\n");
-        return getString(R.string.app_name) + versionName;
+        return getString(R.string.app_name);// + versionName;
     }
 
     public boolean isNetworkAvailable() {
@@ -280,6 +280,21 @@ public class Collect extends Application implements HasActivityInjector {
         mRefreshAllFormsTask
                 .setContext(c);
         mRefreshAllFormsTask.execute();
+    }
+
+    /**
+     * This method writes collect.settings file from assets to disk
+     * @throws RuntimeException
+     * @author soppela.jyri@gmail.com
+     */
+    public static void refreshSettings(Context c) throws RuntimeException {
+        String cardstatus = Environment.getExternalStorageState();
+
+        if (!cardstatus.equals(Environment.MEDIA_MOUNTED)) {
+            throw new RuntimeException(Collect.getInstance().getString(R.string.sdcard_unmounted, cardstatus));
+        }
+
+        new AssetHandler(c).execute(Collect.ODK_ROOT,"settings");
     }
 
     @Override
