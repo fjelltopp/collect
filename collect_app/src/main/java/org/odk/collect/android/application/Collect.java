@@ -329,8 +329,8 @@ public class Collect extends Application implements HasActivityInjector {
         }
 
         //adds Synchronization account if it has not yet been added
-        Account account = CreateSyncAccount(this.getApplicationContext());
-        SyncUtils.InitSync(account);
+        // Account account = CreateSyncAccount(this.getApplicationContext());
+        // SyncUtils.InitSync(account);
 
         setupLeakCanary();
     }
