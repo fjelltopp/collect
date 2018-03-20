@@ -53,7 +53,7 @@ public class SyncUtils {
              */
             return newAccount;
         } else {
-            Log.e(TAG, "No form_auto_update account generated");
+            Log.w(TAG, "No " + ACCOUNT + " account generated");
         }
         return newAccount;
     }
@@ -61,18 +61,25 @@ public class SyncUtils {
     public static void InitSync(Account account){
 
         int pollFrequency = 60;
+        Bundle settingsBundle = new Bundle();
 
         Log.i(TAG, "Initializing SyncAdapter");
 
         try {
-            // ContentResolver.setIsSyncable(account, AUTHORITY, 1);
+            ContentResolver.setIsSyncable(account, AUTHORITY, 1);
             // Inform the system that this account is eligible for auto sync when the network is up
-            // ContentResolver.setSyncAutomatically(account, AUTHORITY, true);
+            ContentResolver.setSyncAutomatically(account, AUTHORITY, true);
             // Recommend a schedule for automatic synchronization. The system may modify this based
             // on other scheduled syncs and network utilization.
             ContentResolver.addPeriodicSync(
                     account, AUTHORITY, Bundle.EMPTY, pollFrequency * 60);
-            ContentResolver.requestSync(account, AUTHORITY, Bundle.EMPTY);
+
+            settingsBundle.putBoolean(
+                    ContentResolver.SYNC_EXTRAS_MANUAL, true);
+            settingsBundle.putBoolean(
+                    ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
+
+            ContentResolver.requestSync(account, AUTHORITY, settingsBundle);
         } catch (NullPointerException e) {
             Log.e(TAG, "Error when initializing sync: " + e.getMessage());
         }
