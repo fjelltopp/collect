@@ -40,12 +40,14 @@ import org.odk.collect.android.utilities.FileUtils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
@@ -446,5 +448,44 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 		} 	catch (IOException e) {
 			throw new IOException("Could not fetch remote MD5", e);
 		}
+	}
+
+	private String remoteMD5OnAggregate (final URL url) throws IOException {
+        String server_response = "";
+    	String remoteMD5 = "";
+    	try {
+			HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+			conn.setReadTimeout(NET_READ_TIMEOUT_MILLIS /* milliseconds */);
+			conn.setConnectTimeout(NET_CONNECT_TIMEOUT_MILLIS /* milliseconds */);
+			conn.setRequestMethod("GET");
+            server_response = readStream(conn.getInputStream());
+		}
+		catch (IOException e) {
+			throw new IOException("Could not fetch Aggregate form MD5", e);
+		}
+        return "";
+	}
+
+	private String readStream(InputStream in) {
+		BufferedReader reader = null;
+		StringBuffer response = new StringBuffer();
+		try {
+			reader = new BufferedReader(new InputStreamReader(in));
+			String line = "";
+			while ((line = reader.readLine()) != null) {
+				response.append(line);
+			}
+		} catch (IOException e) {
+			Log.e(TAG, "Error reading remote stream: " + e.getMessage());
+		} finally {
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException e) {
+					Log.e(TAG, "Error closing remote stream: " + e.getMessage());
+				}
+			}
+		}
+		return response.toString();
 	}
 }
