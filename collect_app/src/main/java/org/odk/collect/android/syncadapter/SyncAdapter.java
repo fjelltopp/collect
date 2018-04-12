@@ -336,68 +336,6 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 
     	
     }
-    
-    public void updateLocalDataFromZip(final InputStream stream, final SyncResult syncResult){
-        Log.i(TAG, "Start updating local data from zip on server");
-        String outputDir = Environment.getExternalStorageDirectory() + File.separator +
-        		"odk";
-        ZipInputStream zStream = new ZipInputStream(new BufferedInputStream(stream));
-        
-        try {
-        	Log.i(TAG, "Printing zip stream to file");
-        	try {
-        		ZipEntry ze;
-        		while ((ze = zStream.getNextEntry()) != null) {
-        			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        			byte[] buffer = new byte[1024];
-        			int count;
-        			while ((count = zStream.read(buffer)) != -1) {
-        				baos.write(buffer, 0, count);
-        			}
-        			String filename = ze.getName();
-        			byte[] bytes = baos.toByteArray();
-        			
-        			filename = ze.getName();  
-        		    
-        			boolean debugIsDirectory = ze.isDirectory();
-        		   
-        			// if the zip entry is a directory, create the directory and its parent 
-        			// directories
-        			if (ze.isDirectory()) {  
-        				File fmd = new File(outputDir + File.separator + filename);
-        				fmd.mkdirs();    
-        			}  else {
-        				File outputFile = new File(outputDir + File.separator,filename);
-        				
-        				// create parent directories for file if they are missing
-        	            if (!outputFile.getParentFile().exists()) {
-        	                outputFile.getParentFile().mkdirs();
-        	            }
-        	            
-        	            // write file on disk
-        				FileOutputStream fout = new FileOutputStream(outputFile);
-        				fout.write(bytes);
-        				fout.close();
-        			}
-        		    zStream.closeEntry();  
-        		}
-        		
-        	} catch (IOException e) {
-        		Log.e(TAG, "Cannot write to file: " + e);
-        	} finally {
-        		if (zStream != null) {
-        			zStream.close();
-        		}
-        	}
-        	
-        }
-        catch (IOException e) {
-        	Log.e(TAG, "Cannot read zip from stream: " + e);
-        }
-        
-        
-        Log.i(TAG, "Updating local data complete");
-    }
 
     
     
