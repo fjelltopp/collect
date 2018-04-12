@@ -7,7 +7,6 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,7 +44,6 @@ public class XmlStreamUtils {
     private List getFormHeaders(XmlPullParser parser) throws XmlPullParserException, IOException {
         List forms = new ArrayList();
 
-
         parser.require(XmlPullParser.START_TAG, ns, FORM_LIST_TAG);
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.getEventType() != XmlPullParser.START_TAG) {
@@ -76,7 +74,6 @@ public class XmlStreamUtils {
         }
     }
 
-
     // Parses the contents of a form definition.
     private XFormHeader readFormHeader(XmlPullParser parser) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, ns, FORM_ITEM_TAG);
@@ -102,14 +99,13 @@ public class XmlStreamUtils {
         return new XFormHeader(formId, formName, hash, mediaFiles);
     }
 
-    // Processes formId tags in the headers.
+    // Processes simple text tags in the headers.
     private String readFormTag(XmlPullParser parser, String tag) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, ns, tag);
         String title = readText(parser);
         parser.require(XmlPullParser.END_TAG, ns, tag);
         return title;
     }
-
 
     // Extracts text value form tags.
     private String readText(XmlPullParser parser) throws IOException, XmlPullParserException {
@@ -122,7 +118,7 @@ public class XmlStreamUtils {
     }
 
 
-
+    // Skips tag and returns to higher level of hierarchy
     private void skip(XmlPullParser parser) throws XmlPullParserException, IOException {
         if (parser.getEventType() != XmlPullParser.START_TAG) {
             throw new IllegalStateException();
