@@ -11,12 +11,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Utilities to handle XML Streams for reading form lists and manifests from ODK Aggregate
+ *
  * Created by Jyri Soppela on 20/03/18.
  */
 
-public class XmlStreamUtils {
+public final class XmlStreamUtils {
     private static final String ns = null;
-
     private static final String FORM_LIST_TAG = "xforms";
     private static final String FORM_ITEM_TAG = "xform";
     private static final String FORM_ID_TAG = "formID";
@@ -28,8 +29,33 @@ public class XmlStreamUtils {
     private static final String MEDIA_FILE_MD5_TAG = "hash";
     private static final String MEDIA_FILE_DOWNLOAD_TAG = "downloadUrl";
 
+    public static class XFormHeader {
+        public final String formId;
+        public final String name;
+        public final String hash;
+        public final ArrayList mediaFiles;
 
-    public List readFormHeaders(InputStream in, String formID) throws XmlPullParserException, IOException {
+        private XFormHeader(String formId, String name, String hash, ArrayList mediaFiles) {
+            this.formId = formId;
+            this.name = name;
+            this.hash = hash;
+            this.mediaFiles = mediaFiles;
+        }
+    }
+
+    public static class MediaFile {
+        public final String id;
+        public final String name;
+        public final String md5;
+
+        private MediaFile(String id, String name, String md5) {
+            this.id = id;
+            this.name = name;
+            this.md5 = md5;
+        }
+    }
+
+    public static List readFormHeaders(InputStream in, String formID) throws XmlPullParserException, IOException {
         try {
             XmlPullParser parser = Xml.newPullParser();
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
@@ -41,7 +67,7 @@ public class XmlStreamUtils {
         }
     }
 
-    private List getFormHeaders(XmlPullParser parser) throws XmlPullParserException, IOException {
+    private static List getFormHeaders(XmlPullParser parser) throws XmlPullParserException, IOException {
         List forms = new ArrayList();
 
         parser.require(XmlPullParser.START_TAG, ns, FORM_LIST_TAG);
@@ -60,22 +86,8 @@ public class XmlStreamUtils {
         return forms;
     }
 
-    public static class XFormHeader {
-        public final String formId;
-        public final String name;
-        public final String hash;
-        public final ArrayList mediaFiles;
-
-        private XFormHeader(String formId, String name, String hash, ArrayList mediaFiles) {
-            this.formId = formId;
-            this.name = name;
-            this.hash = hash;
-            this.mediaFiles = mediaFiles;
-        }
-    }
-
     // Parses the contents of a form definition.
-    private XFormHeader readFormHeader(XmlPullParser parser) throws XmlPullParserException, IOException {
+    private static XFormHeader readFormHeader(XmlPullParser parser) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, ns, FORM_ITEM_TAG);
         String formId = null;
         String formName = null;
@@ -100,7 +112,7 @@ public class XmlStreamUtils {
     }
 
     // Processes simple text tags in the headers.
-    private String readFormTag(XmlPullParser parser, String tag) throws IOException, XmlPullParserException {
+    private static String readFormTag(XmlPullParser parser, String tag) throws IOException, XmlPullParserException {
         parser.require(XmlPullParser.START_TAG, ns, tag);
         String title = readText(parser);
         parser.require(XmlPullParser.END_TAG, ns, tag);
@@ -108,7 +120,7 @@ public class XmlStreamUtils {
     }
 
     // Extracts text value form tags.
-    private String readText(XmlPullParser parser) throws IOException, XmlPullParserException {
+    private static String readText(XmlPullParser parser) throws IOException, XmlPullParserException {
         String result = "";
         if (parser.next() == XmlPullParser.TEXT) {
             result = parser.getText();
@@ -119,7 +131,7 @@ public class XmlStreamUtils {
 
 
     // Skips tag and returns to higher level of hierarchy
-    private void skip(XmlPullParser parser) throws XmlPullParserException, IOException {
+    private static void skip(XmlPullParser parser) throws XmlPullParserException, IOException {
         if (parser.getEventType() != XmlPullParser.START_TAG) {
             throw new IllegalStateException();
         }

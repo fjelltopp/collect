@@ -36,6 +36,8 @@ import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.preferences.PreferencesActivity;
 import org.odk.collect.android.preferences.PreferenceKeys;
 import org.odk.collect.android.utilities.FileUtils;
+import org.odk.collect.android.utilities.XmlStreamUtils;
+import org.xmlpull.v1.XmlPullParserException;
 // import org.odk.collect.android.utilities.NotificationUtils;
 
 import java.io.BufferedInputStream;
@@ -53,6 +55,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.List;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -213,7 +217,6 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 				urlpath=urlpath.replace("%3A", ":");
 				urlpath=urlpath.replace("%2F", "/");
 
-
     			newurl = new URL(urlpath);
 				Log.i(TAG,"Syncing url " + urlpath);
     			
@@ -225,6 +228,7 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 
 					//Get MD5 hash on server
 					remoteMD5 = remoteMD5OnServer(newurl);
+					remoteMD5 = remoteMD5OnAggregate(newurl);
 					try {
 						remoteMD5 = remoteMD5.replace("\"", ""); // remove double quotes
 					} catch (NullPointerException e) {
@@ -264,7 +268,7 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
     	File cacheFile = File.createTempFile(outputfile.getName(), ".tmp", cacheDir);
     	BufferedInputStream bis = null;
     	InputStream is = null;
-    	OutputStream os = null;
+    	OutputStream os;
     	BufferedOutputStream bos = null;
     	try{
     		Log.i(TAG, "Printing stream to cache file");
@@ -372,7 +376,7 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
     }
 
 	private String remoteMD5OnServer (final URL url) throws IOException {
-		String remoteMD5 = "";
+		String remoteMD5;
 		try {
 			HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
 			conn.setReadTimeout(NET_READ_TIMEOUT_MILLIS /* milliseconds */);
@@ -391,16 +395,21 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 	private String remoteMD5OnAggregate (final URL url) throws IOException {
         String server_response = "";
     	String remoteMD5 = "";
+    	List formHeaderList;
+        InputStream inputStream;
     	try {
 			HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
 			conn.setReadTimeout(NET_READ_TIMEOUT_MILLIS /* milliseconds */);
 			conn.setConnectTimeout(NET_CONNECT_TIMEOUT_MILLIS /* milliseconds */);
 			conn.setRequestMethod("GET");
-            server_response = readStream(conn.getInputStream());
+            inputStream = conn.getInputStream();
+            formHeaderList = XmlStreamUtils.readFormHeaders(inputStream, "");
 		}
 		catch (IOException e) {
 			throw new IOException("Could not fetch Aggregate form MD5", e);
-		}
+		} catch (XmlPullParserException e) {
+            throw new IOException("Broken form manifest in Aggregate", e);
+        }
         return "";
 	}
 
@@ -409,7 +418,7 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 		StringBuffer response = new StringBuffer();
 		try {
 			reader = new BufferedReader(new InputStreamReader(in));
-			String line = "";
+			String line;
 			while ((line = reader.readLine()) != null) {
 				response.append(line);
 			}
