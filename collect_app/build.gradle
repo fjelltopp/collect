@@ -154,6 +154,10 @@ android {
         southcentral {
             dimension "PARTNER"
         }
+        demo {
+            dimension "PARTNER"
+            applicationId "org.fjelltopp.collect.demo"
+        }
 
     }
 
