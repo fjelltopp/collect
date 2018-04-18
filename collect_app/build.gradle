@@ -133,7 +133,7 @@ android {
         nutrition {
             dimension "PARTNER"
             buildConfigField "String", "ODK_ROOT_FOLDER", "\"odk_nutrition\""
-            applicationId "org.odk.collect.android.nutrition" //applicationIdSuffix ".nutrition"
+            applicationId "org.odk.collect.android.nutrition"
 
             buildConfigField "String", "CONTENT_TYPE", "vnd.android.cursor.dir/vnd.odk.form.nutrition"
             buildConfigField "String", "CONTENT_ITEM_TYPE", "vnd.android.cursor.item/vnd.odk.form.nutrition"
