@@ -19,9 +19,11 @@ package org.odk.collect.android.syncadapter;
 import android.accounts.Account;
 import android.content.AbstractThreadedSyncAdapter;
 import android.content.ContentProviderClient;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SyncResult;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Environment;
@@ -33,9 +35,13 @@ import org.odk.collect.android.application.Collect;
 // import org.odk.collect.android.database.SyncSQLiteContract.SyncFileEntry;
 // import org.odk.collect.android.database.SyncSQLiteOpenHelper;
 // import org.odk.collect.android.gcm.SendDeviceReport;
+import org.odk.collect.android.dao.FormsDao;
 import org.odk.collect.android.preferences.PreferencesActivity;
 import org.odk.collect.android.preferences.PreferenceKeys;
+import org.odk.collect.android.provider.FormsProvider;
+import org.odk.collect.android.provider.FormsProviderAPI;
 import org.odk.collect.android.utilities.FileUtils;
+import org.odk.collect.android.utilities.XmlStreamUtils;
 // import org.odk.collect.android.utilities.NotificationUtils;
 
 import java.io.BufferedInputStream;
@@ -53,6 +59,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -134,6 +142,7 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
     	if (allowSync || forceSync) {
 			URL location;
 			String location_url;
+			URL aggregate_url;
 	    	Log.i(TAG, "Synchronization started");
 			try {
 				location_url = sp.getString(PreferenceKeys.KEY_FORM_SYNC_URL, null);
@@ -143,7 +152,10 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 				location = new URL(location_url + "/");
 				
 				
-				
+				aggregate_url = new URL(
+				        sp.getString(PreferenceKeys.KEY_SERVER_URL, null) + "/") ;
+				syncForms(aggregate_url, forceSync, syncResult);
+
 				syncFileTree(location, SYNCFOLDER, forceSync, syncResult);
 			} catch (MalformedURLException e) {
 				Log.e(TAG,"Malformed URL");
@@ -164,6 +176,47 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
     	else {
     	    Log.i(TAG, "Sync disabled");
         }
+    }
+
+    private void syncForms(final URL url, boolean forceSync, SyncResult syncResult) throws IOException {
+
+        ArrayList<String> forms = getInstalledForms();
+        Cursor c = null;
+
+        try {
+            c = new FormsDao().getFormsCursor();
+
+            if (c.getCount() > 0) {
+                c.moveToPosition(-1);
+                while (c.moveToNext()) {
+                    String remoteFormMD5 = remoteFormMD5OnAggregate(c.getString(
+                            c.getColumnIndex(FormsProviderAPI.FormsColumns.JR_FORM_ID)));
+                    String localFormMD5 = c.getString(c.getColumnIndex(
+                            FormsProviderAPI.FormsColumns.MD5_HASH));
+                    if (!remoteFormMD5.equals(localFormMD5)) {
+                        downloadUrl(new URL(""));
+                    }
+
+                    ArrayList<String> mediaFiles = getMediaFiles(c.getString(
+                            c.getColumnIndex(FormsProviderAPI.FormsColumns.FORM_MEDIA_PATH)));
+                    for (String mediaFile : mediaFiles) {
+                        String remoteMediaFileMD5 = remoteMediaFileMD5OnAggregate(form);
+                        String localMediaFileMD5 = localMediaFileMD5OnAggregate(form);
+                        if (!remoteMediaFileMD5.equals(localMediaFileMD5)) {
+                            downloadUrl(new URL(""));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    private ArrayList<String> getMediaFiles(String formMediaPath) {
+        String[] array = new String[]{"demo_register","demo_case"};
+        return new ArrayList<>(Arrays.asList(array));
+
+
     }
     
     private void syncFileTree(final URL url, final File folder, boolean forceSync, SyncResult syncResult) throws IOException {
@@ -388,7 +441,7 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 		}
 	}
 
-	private String remoteMD5OnAggregate (final URL url) throws IOException {
+	private String remoteFormMD5OnAggregate (String formID) throws IOException {
         String server_response = "";
     	String remoteMD5 = "";
     	try {
@@ -403,6 +456,22 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 		}
         return "";
 	}
+
+    private String remoteMediaFileMD5OnAggregate (String formID) throws IOException {
+        String server_response = "";
+        String remoteMD5 = "";
+        try {
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setReadTimeout(NET_READ_TIMEOUT_MILLIS /* milliseconds */);
+            conn.setConnectTimeout(NET_CONNECT_TIMEOUT_MILLIS /* milliseconds */);
+            conn.setRequestMethod("GET");
+            server_response = readStream(conn.getInputStream());
+        }
+        catch (IOException e) {
+            throw new IOException("Could not fetch Aggregate form MD5", e);
+        }
+        return "";
+    }
 
 	private String readStream(InputStream in) {
 		BufferedReader reader = null;
