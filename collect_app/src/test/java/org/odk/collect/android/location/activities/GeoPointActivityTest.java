@@ -1,7 +1,5 @@
 package org.odk.collect.android.location.activities;
 
-
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.location.Location;
 
@@ -22,7 +20,6 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowActivity;
-import org.robolectric.util.ReflectionHelpers;
 
 import static android.app.Activity.RESULT_OK;
 import static android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS;
@@ -35,10 +32,9 @@ import static org.mockito.Mockito.when;
 import static org.odk.collect.android.activities.FormEntryActivity.LOCATION_RESULT;
 import static org.robolectric.Shadows.shadowOf;
 
-
 @Config(constants = BuildConfig.class)
 @RunWith(RobolectricTestRunner.class)
-public class GeoPointActivityTest {
+public class GeoPointActivityTest extends BaseGeoActivityTest {
 
     @Rule
     public MockitoRule rule = MockitoJUnit.rule();
@@ -56,6 +52,7 @@ public class GeoPointActivityTest {
      */
     @Before
     public void setUp() throws Exception {
+        super.setUp();
         activityController = Robolectric.buildActivity(GeoPointActivity.class);
         activity = activityController.get();
         shadowActivity = shadowOf(activity);
@@ -85,12 +82,11 @@ public class GeoPointActivityTest {
         when(firstLocation.getAccuracy()).thenReturn(0.0f);
 
         activity.onLocationChanged(firstLocation);
-        ProgressDialog locationDialog = activity.getLocationDialog();
 
         // First update should only change dialog message (to avoid network location bug):
         assertFalse(shadowActivity.isFinishing());
         assertEquals(
-                getDialogMessage(locationDialog),
+                activity.getDialogMessage(),
                 activity.getAccuracyMessage(firstLocation)
         );
 
@@ -104,7 +100,7 @@ public class GeoPointActivityTest {
 
         assertFalse(shadowActivity.isFinishing());
         assertEquals(
-                getDialogMessage(locationDialog),
+                activity.getDialogMessage(),
                 activity.getProviderAccuracyMessage(secondLocation)
         );
 
@@ -118,7 +114,7 @@ public class GeoPointActivityTest {
 
         assertTrue(shadowActivity.isFinishing());
         assertEquals(
-                getDialogMessage(locationDialog),
+                activity.getDialogMessage(),
                 activity.getProviderAccuracyMessage(thirdLocation)
         );
 
@@ -166,10 +162,6 @@ public class GeoPointActivityTest {
         activityController.stop();
 
         verify(locationClient).stop();
-    }
-
-    private static String getDialogMessage(ProgressDialog progressDialog) {
-        return ReflectionHelpers.getField(progressDialog, "mMessage");
     }
 
     public static Location newMockLocation() {

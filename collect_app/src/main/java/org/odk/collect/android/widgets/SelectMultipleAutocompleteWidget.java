@@ -17,11 +17,13 @@
 package org.odk.collect.android.widgets;
 
 import android.content.Context;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.CompoundButton;
+import android.widget.LinearLayout;
 
 import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.listeners.AudioPlayListener;
+import org.odk.collect.android.utilities.SoftKeyboardUtils;
+import org.odk.collect.android.widgets.warnings.SpacesInUnderlyingValuesWarning;
 
 import java.util.List;
 
@@ -35,21 +37,23 @@ public class SelectMultipleAutocompleteWidget extends SelectMultiWidget implemen
         for (int i = 0; i < checkBoxes.size(); i++) {
             if (tagList == null || tagList.contains(i)) {
                 answerLayout.addView(checkBoxes.get(i));
+                answerLayout.setDividerDrawable(getResources().getDrawable(themeUtils.getDivider()));
+                answerLayout.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
             }
         }
     }
 
     @Override
     public void setFocus(Context context) {
-        // Put focus on text input field and display soft keyboard if appropriate.
-        searchStr.requestFocus();
-        InputMethodManager inputManager = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-        inputManager.showSoftInput(searchStr, 0);
+        SoftKeyboardUtils.showSoftKeyboard(searchStr);
     }
 
     @Override
     protected void createLayout() {
+        readItems();
+
         if (items != null) {
+            SpacesInUnderlyingValuesWarning.forQuestionWidget(this).renderWarningIfNecessary(items);
             for (int i = 0; i < items.size(); i++) {
                 checkBoxes.add(createCheckBox(i));
             }

@@ -25,10 +25,11 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore.Images;
+import android.provider.OpenableColumns;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -39,9 +40,7 @@ import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.GestureDetector;
 import android.view.GestureDetector.OnGestureListener;
-import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -52,7 +51,6 @@ import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -61,12 +59,12 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.common.collect.ImmutableList;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
+import org.javarosa.core.model.FormDef;
 import org.javarosa.core.model.FormIndex;
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.instance.TreeElement;
@@ -74,52 +72,59 @@ import org.javarosa.form.api.FormEntryCaption;
 import org.javarosa.form.api.FormEntryController;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.joda.time.LocalDateTime;
+import org.odk.collect.android.BuildConfig;
 import org.odk.collect.android.R;
 import org.odk.collect.android.adapters.IconMenuListAdapter;
 import org.odk.collect.android.adapters.model.IconMenuItem;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.dao.FormsDao;
-import org.odk.collect.android.dao.InstancesDao;
+import org.odk.collect.android.dao.helpers.ContentResolverHelper;
+import org.odk.collect.android.dao.helpers.FormsDaoHelper;
+import org.odk.collect.android.dao.helpers.InstancesDaoHelper;
 import org.odk.collect.android.exception.GDriveConnectionException;
 import org.odk.collect.android.exception.JavaRosaException;
 import org.odk.collect.android.external.ExternalDataManager;
 import org.odk.collect.android.fragments.dialogs.CustomDatePickerDialog;
 import org.odk.collect.android.fragments.dialogs.NumberPickerDialog;
-import org.odk.collect.android.utilities.DependencyProvider;
+import org.odk.collect.android.fragments.dialogs.RankingWidgetDialog;
 import org.odk.collect.android.listeners.AdvanceToNextListener;
 import org.odk.collect.android.listeners.FormLoaderListener;
 import org.odk.collect.android.listeners.FormSavedListener;
+import org.odk.collect.android.listeners.PermissionListener;
 import org.odk.collect.android.listeners.SavePointListener;
 import org.odk.collect.android.logic.FormController;
 import org.odk.collect.android.logic.FormController.FailedConstraint;
+import org.odk.collect.android.logic.FormInfo;
 import org.odk.collect.android.preferences.AdminKeys;
 import org.odk.collect.android.preferences.AdminSharedPreferences;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
 import org.odk.collect.android.preferences.PreferenceKeys;
 import org.odk.collect.android.preferences.PreferencesActivity;
 import org.odk.collect.android.provider.FormsProviderAPI.FormsColumns;
-import org.odk.collect.android.provider.InstanceProviderAPI;
 import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
 import org.odk.collect.android.tasks.FormLoaderTask;
 import org.odk.collect.android.tasks.SaveFormIndexTask;
-import org.odk.collect.android.utilities.ActivityAvailability;
-import org.odk.collect.android.utilities.ImageConverter;
 import org.odk.collect.android.tasks.SavePointTask;
 import org.odk.collect.android.tasks.SaveResult;
 import org.odk.collect.android.tasks.SaveToDiskTask;
+import org.odk.collect.android.utilities.ActivityAvailability;
 import org.odk.collect.android.utilities.ApplicationConstants;
+import org.odk.collect.android.utilities.DependencyProvider;
 import org.odk.collect.android.utilities.DialogUtils;
 import org.odk.collect.android.utilities.FileUtils;
+import org.odk.collect.android.utilities.ImageConverter;
+import org.odk.collect.android.utilities.MediaManager;
 import org.odk.collect.android.utilities.MediaUtils;
+import org.odk.collect.android.utilities.SoftKeyboardUtils;
 import org.odk.collect.android.utilities.TimerLogger;
 import org.odk.collect.android.utilities.ToastUtils;
 import org.odk.collect.android.views.ODKView;
+import org.odk.collect.android.widgets.DateTimeWidget;
 import org.odk.collect.android.widgets.QuestionWidget;
 import org.odk.collect.android.widgets.RangeWidget;
 import org.odk.collect.android.widgets.StringWidget;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -132,6 +137,9 @@ import static android.content.DialogInterface.BUTTON_NEGATIVE;
 import static android.content.DialogInterface.BUTTON_POSITIVE;
 import static org.odk.collect.android.preferences.AdminKeys.KEY_MOVING_BACKWARDS;
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
+import static org.odk.collect.android.utilities.PermissionUtils.checkIfStoragePermissionsGranted;
+import static org.odk.collect.android.utilities.PermissionUtils.finishAllActivities;
+import static org.odk.collect.android.utilities.PermissionUtils.requestStoragePermissions;
 
 /**
  * FormEntryActivity is responsible for displaying questions, animating
@@ -139,13 +147,15 @@ import static org.odk.collect.android.utilities.ApplicationConstants.RequestCode
  *
  * @author Carl Hartung (carlhartung@gmail.com)
  * @author Thomas Smyth, Sassafras Tech Collective (tom@sassafrastech.com; constraint behavior
- *         option)
+ * option)
  */
-public class FormEntryActivity extends AppCompatActivity implements AnimationListener,
+public class FormEntryActivity extends CollectAbstractActivity implements AnimationListener,
         FormLoaderListener, FormSavedListener, AdvanceToNextListener,
         OnGestureListener, SavePointListener, NumberPickerDialog.NumberPickerListener,
         DependencyProvider<ActivityAvailability>,
-        CustomDatePickerDialog.CustomDatePickerDialogListener, SaveFormIndexTask.SaveFormIndexListener {
+        CustomDatePickerDialog.CustomDatePickerDialogListener,
+        RankingWidgetDialog.RankingListener,
+        SaveFormIndexTask.SaveFormIndexListener {
 
     // save with every swipe forward or back. Timings indicate this takes .25
     // seconds.
@@ -205,7 +215,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
 
     private Animation inAnimation;
     private Animation outAnimation;
-    private View staleView = null;
+    private View staleView;
 
     private LinearLayout questionHolder;
     private View currentView;
@@ -219,7 +229,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
     private boolean beenSwiped;
 
     private final Object saveDialogLock = new Object();
-    private int viewCount = 0;
+    private int viewCount;
 
     private FormLoaderTask formLoaderTask;
     private SaveToDiskTask saveToDiskTask;
@@ -227,8 +237,17 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
     private ImageButton nextButton;
     private ImageButton backButton;
 
-    private Toolbar toolbar;
     private ODKView odkView;
+    private boolean doSwipe = true;
+    private String instancePath;
+    private String startingXPath;
+    private String waitingXPath;
+    private boolean newForm = true;
+    private boolean onResumeWasCalledWithoutPermissions;
+
+    public void allowSwiping(boolean doSwipe) {
+        this.doSwipe = doSwipe;
+    }
 
     enum AnimationType {
         LEFT, RIGHT, FADE
@@ -236,14 +255,12 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
 
     private boolean showNavigationButtons;
 
-    private FormsDao formsDao;
-
     private Bundle state;
 
     @NonNull
     private ActivityAvailability activityAvailability = new ActivityAvailability(this);
 
-    private boolean shouldOverrideAnimations = false;
+    private boolean shouldOverrideAnimations;
 
     /**
      * Called when the activity is first created.
@@ -252,55 +269,62 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // must be at the beginning of any activity that can be called from an
-        // external intent
-        try {
-            Collect.createODKDirs();
-        } catch (RuntimeException e) {
-            createErrorDialog(e.getMessage(), EXIT);
-            return;
-        }
-
         setContentView(R.layout.form_entry);
-
-        formsDao = new FormsDao();
 
         errorMessage = null;
 
         beenSwiped = false;
-        alertDialog = null;
-        currentView = null;
-        inAnimation = null;
-        outAnimation = null;
+
         gestureDetector = new GestureDetector(this, this);
         questionHolder = findViewById(R.id.questionholder);
 
         initToolbar();
 
         nextButton = findViewById(R.id.form_forward_button);
-        nextButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                beenSwiped = true;
-                showNextView();
-            }
+        nextButton.setOnClickListener(v -> {
+            beenSwiped = true;
+            showNextView();
         });
 
         backButton = findViewById(R.id.form_back_button);
-        backButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                beenSwiped = true;
-                showPreviousView();
-            }
+        backButton.setOnClickListener(v -> {
+            beenSwiped = true;
+            showPreviousView();
         });
 
-        String startingXPath = null;
-        String waitingXPath = null;
-        String instancePath = null;
-        boolean newForm = true;
-        autoSaved = false;
-        allowMovingBackwards = (boolean) AdminSharedPreferences.getInstance().get(KEY_MOVING_BACKWARDS);
+        requestStoragePermissions(this, new PermissionListener() {
+            @Override
+            public void granted() {
+                // must be at the beginning of any activity that can be called from an external intent
+                try {
+                    Collect.createODKDirs();
+                    setupFields(savedInstanceState);
+                    loadForm();
+
+                    /**
+                     * Since onResume is called after onCreate we check to see if
+                     * it was called without the permissions that are required. If so then
+                     * we call it.This is especially useful for cases where a user might revoke
+                     * permissions to storage and not know the implications it has on the form entry.
+                     */
+                    if (onResumeWasCalledWithoutPermissions) {
+                        onResume();
+                    }
+                } catch (RuntimeException e) {
+                    createErrorDialog(e.getMessage(), EXIT);
+                    return;
+                }
+            }
+
+            @Override
+            public void denied() {
+                // The activity has to finish because ODK Collect cannot function without these permissions.
+                finishAllActivities(FormEntryActivity.this);
+            }
+        });
+    }
+
+    private void setupFields(Bundle savedInstanceState) {
         if (savedInstanceState != null) {
             state = savedInstanceState;
             if (savedInstanceState.containsKey(KEY_FORMPATH)) {
@@ -330,6 +354,11 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
             }
         }
 
+    }
+
+    private void loadForm() {
+        allowMovingBackwards = (boolean) AdminSharedPreferences.getInstance().get(KEY_MOVING_BACKWARDS);
+
         // If a parse error message is showing then nothing else is loaded
         // Dialogs mid form just disappear on rotation.
         if (errorMessage != null) {
@@ -345,7 +374,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
             saveToDiskTask = (SaveToDiskTask) data;
         } else if (data == null) {
             if (!newForm) {
-                if (Collect.getInstance().getFormController() != null) {
+                if (getFormController() != null) {
                     refreshCurrentView();
                 } else {
                     Timber.w("Reloading form and restoring state.");
@@ -366,192 +395,141 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
             // Not a restart from a screen orientation change (or other).
             Collect.getInstance().setFormController(null);
             supportInvalidateOptionsMenu();
-
             Intent intent = getIntent();
             if (intent != null) {
-                Uri uri = intent.getData();
-                String uriMimeType = null;
-
-                if (uri != null) {
-                    uriMimeType = getContentResolver().getType(uri);
-                }
-
-                if (uriMimeType == null && intent.hasExtra(EXTRA_TESTING_PATH)) {
-                    formPath = intent.getStringExtra(EXTRA_TESTING_PATH);
-
-                } else if (uriMimeType != null && uriMimeType.equals(InstanceColumns.CONTENT_ITEM_TYPE)) {
-                    // get the formId and version for this instance...
-                    String jrFormId = null;
-                    String jrVersion = null;
-                    {
-                        Cursor instanceCursor = null;
-                        try {
-                            instanceCursor = getContentResolver().query(uri,
-                                    null, null, null, null);
-                            if (instanceCursor == null || instanceCursor.getCount() != 1) {
-                                this.createErrorDialog(getString(R.string.bad_uri, uri), EXIT);
-                                return;
-                            } else {
-                                instanceCursor.moveToFirst();
-                                instancePath = instanceCursor
-                                        .getString(instanceCursor
-                                                .getColumnIndex(
-                                                        InstanceColumns.INSTANCE_FILE_PATH));
-                                Collect.getInstance()
-                                        .getActivityLogger()
-                                        .logAction(this, "instanceLoaded",
-                                                instancePath);
-
-                                jrFormId = instanceCursor
-                                        .getString(instanceCursor
-                                                .getColumnIndex(InstanceColumns.JR_FORM_ID));
-                                int idxJrVersion = instanceCursor
-                                        .getColumnIndex(InstanceColumns.JR_VERSION);
-
-                                jrVersion = instanceCursor.isNull(idxJrVersion) ? null
-                                        : instanceCursor
-                                        .getString(idxJrVersion);
-                            }
-                        } finally {
-                            if (instanceCursor != null) {
-                                instanceCursor.close();
-                            }
-                        }
-                    }
-
-                    String[] selectionArgs;
-                    String selection;
-
-                    if (jrVersion == null) {
-                        selectionArgs = new String[]{jrFormId};
-                        selection = FormsColumns.JR_FORM_ID + "=? AND "
-                                + FormsColumns.JR_VERSION + " IS NULL";
-                    } else {
-                        selectionArgs = new String[]{jrFormId, jrVersion};
-                        selection = FormsColumns.JR_FORM_ID + "=? AND "
-                                + FormsColumns.JR_VERSION + "=?";
-                    }
-
-                    {
-                        Cursor formCursor = null;
-                        try {
-                            formCursor = formsDao.getFormsCursor(selection, selectionArgs);
-                            if (formCursor.getCount() == 1) {
-                                formCursor.moveToFirst();
-                                formPath = formCursor
-                                        .getString(formCursor
-                                                .getColumnIndex(FormsColumns.FORM_FILE_PATH));
-                            } else if (formCursor.getCount() < 1) {
-                                this.createErrorDialog(
-                                        getString(
-                                                R.string.parent_form_not_present,
-                                                jrFormId)
-                                                + ((jrVersion == null) ? ""
-                                                : "\n"
-                                                + getString(R.string.version)
-                                                + " "
-                                                + jrVersion),
-                                        EXIT);
-                                return;
-                            } else if (formCursor.getCount() > 1) {
-                                // still take the first entry, but warn that
-                                // there are multiple rows.
-                                // user will need to hand-edit the SQLite
-                                // database to fix it.
-                                formCursor.moveToFirst();
-                                formPath = formCursor.getString(
-                                        formCursor.getColumnIndex(FormsColumns.FORM_FILE_PATH));
-                                this.createErrorDialog(
-                                        getString(R.string.survey_multiple_forms_error), EXIT);
-                                return;
-                            }
-                        } finally {
-                            if (formCursor != null) {
-                                formCursor.close();
-                            }
-                        }
-                    }
-                } else if (uriMimeType != null
-                        && uriMimeType.equals(FormsColumns.CONTENT_ITEM_TYPE)) {
-                    Cursor c = null;
-                    try {
-                        c = getContentResolver().query(uri, null, null, null,
-                                null);
-                        if (c == null || c.getCount() != 1) {
-                            this.createErrorDialog(getString(R.string.bad_uri, uri), EXIT);
-                            return;
-                        } else {
-                            c.moveToFirst();
-                            formPath = c.getString(c.getColumnIndex(FormsColumns.FORM_FILE_PATH));
-                            // This is the fill-blank-form code path.
-                            // See if there is a savepoint for this form that
-                            // has never been
-                            // explicitly saved
-                            // by the user. If there is, open this savepoint
-                            // (resume this filled-in
-                            // form).
-                            // Savepoints for forms that were explicitly saved
-                            // will be recovered
-                            // when that
-                            // explicitly saved instance is edited via
-                            // edit-saved-form.
-                            final String filePrefix = formPath.substring(
-                                    formPath.lastIndexOf('/') + 1,
-                                    formPath.lastIndexOf('.'))
-                                    + "_";
-                            final String fileSuffix = ".xml.save";
-                            File cacheDir = new File(Collect.CACHE_PATH);
-                            File[] files = cacheDir.listFiles(new FileFilter() {
-                                @Override
-                                public boolean accept(File pathname) {
-                                    String name = pathname.getName();
-                                    return name.startsWith(filePrefix)
-                                            && name.endsWith(fileSuffix);
-                                }
-                            });
-                            // see if any of these savepoints are for a
-                            // filled-in form that has never been
-                            // explicitly saved by the user...
-                            for (File candidate : files) {
-                                String instanceDirName = candidate.getName()
-                                        .substring(
-                                                0,
-                                                candidate.getName().length()
-                                                        - fileSuffix.length());
-                                File instanceDir = new File(
-                                        Collect.INSTANCES_PATH + File.separator
-                                                + instanceDirName);
-                                File instanceFile = new File(instanceDir,
-                                        instanceDirName + ".xml");
-                                if (instanceDir.exists()
-                                        && instanceDir.isDirectory()
-                                        && !instanceFile.exists()) {
-                                    // yes! -- use this savepoint file
-                                    instancePath = instanceFile
-                                            .getAbsolutePath();
-                                    break;
-                                }
-                            }
-                        }
-                    } finally {
-                        if (c != null) {
-                            c.close();
-                        }
-                    }
-                } else {
-                    Timber.e("Unrecognized URI: %s", uri);
-                    this.createErrorDialog(getString(R.string.unrecognized_uri, uri), EXIT);
-                    return;
-                }
-
-                formLoaderTask = new FormLoaderTask(instancePath, null, null);
-                Collect.getInstance().getActivityLogger()
-                        .logAction(this, "formLoaded", formPath);
-                showDialog(PROGRESS_DIALOG);
-                // show dialog before we execute...
-                formLoaderTask.execute(formPath);
+                loadFromIntent(intent);
             }
         }
+    }
+
+    private void loadFromIntent(Intent intent) {
+        Uri uri = intent.getData();
+        String uriMimeType = null;
+
+        if (uri != null) {
+            uriMimeType = getContentResolver().getType(uri);
+        }
+
+        if (uriMimeType == null && intent.hasExtra(EXTRA_TESTING_PATH)) {
+            formPath = intent.getStringExtra(EXTRA_TESTING_PATH);
+
+        } else if (uriMimeType != null && uriMimeType.equals(InstanceColumns.CONTENT_ITEM_TYPE)) {
+            // get the formId and version for this instance...
+
+            FormInfo formInfo = ContentResolverHelper.getFormDetails(uri);
+
+            if (formInfo == null) {
+                createErrorDialog(getString(R.string.bad_uri, uri), EXIT);
+                return;
+            }
+
+            instancePath = formInfo.getInstancePath();
+            Collect.getInstance()
+                    .getActivityLogger()
+                    .logAction(this, "instanceLoaded",
+                            instancePath);
+
+            String jrFormId = formInfo.getFormID();
+            String jrVersion = formInfo.getFormVersion();
+
+            String[] selectionArgs;
+            String selection;
+            if (jrVersion == null) {
+                selectionArgs = new String[]{jrFormId};
+                selection = FormsColumns.JR_FORM_ID + "=? AND "
+                        + FormsColumns.JR_VERSION + " IS NULL";
+            } else {
+                selectionArgs = new String[]{jrFormId, jrVersion};
+                selection = FormsColumns.JR_FORM_ID + "=? AND "
+                        + FormsColumns.JR_VERSION + "=?";
+            }
+
+            int formCount = FormsDaoHelper.getFormsCount(selection, selectionArgs);
+            if (formCount < 1) {
+                createErrorDialog(getString(
+                        R.string.parent_form_not_present,
+                        jrFormId)
+                                + ((jrVersion == null) ? ""
+                                : "\n"
+                                + getString(R.string.version)
+                                + " "
+                                + jrVersion),
+                        EXIT);
+                return;
+            } else {
+                formPath = FormsDaoHelper.getFormPath(selection, selectionArgs);
+
+                /**
+                 * Still take the first entry, but warn that there are multiple rows. User will
+                 * need to hand-edit the SQLite database to fix it.
+                 */
+                if (formCount > 1) {
+                    createErrorDialog(getString(R.string.survey_multiple_forms_error), EXIT);
+                    return;
+                }
+            }
+        } else if (uriMimeType != null
+                && uriMimeType.equals(FormsColumns.CONTENT_ITEM_TYPE)) {
+            formPath = ContentResolverHelper.getFormPath(uri);
+            if (formPath == null) {
+                createErrorDialog(getString(R.string.bad_uri, uri), EXIT);
+                return;
+            } else {
+                /**
+                 * This is the fill-blank-form code path.See if there is a savepoint for this form
+                 * that has never been explicitly saved by the user. If there is, open this savepoint(resume this filled-in form).
+                 * Savepoints for forms that were explicitly saved will be recovered when that
+                 * explicitly saved instance is edited via edit-saved-form.
+                 */
+                final String filePrefix = formPath.substring(
+                        formPath.lastIndexOf('/') + 1,
+                        formPath.lastIndexOf('.'))
+                        + "_";
+                final String fileSuffix = ".xml.save";
+                File cacheDir = new File(Collect.CACHE_PATH);
+                File[] files = cacheDir.listFiles(pathname -> {
+                    String name = pathname.getName();
+                    return name.startsWith(filePrefix)
+                            && name.endsWith(fileSuffix);
+                });
+
+                /**
+                 * See if any of these savepoints are for a filled-in form that has never
+                 * been explicitly saved by the user.
+                 */
+                for (File candidate : files) {
+                    String instanceDirName = candidate.getName()
+                            .substring(
+                                    0,
+                                    candidate.getName().length()
+                                            - fileSuffix.length());
+                    File instanceDir = new File(
+                            Collect.INSTANCES_PATH + File.separator
+                                    + instanceDirName);
+                    File instanceFile = new File(instanceDir,
+                            instanceDirName + ".xml");
+                    if (instanceDir.exists()
+                            && instanceDir.isDirectory()
+                            && !instanceFile.exists()) {
+                        // yes! -- use this savepoint file
+                        instancePath = instanceFile
+                                .getAbsolutePath();
+                        break;
+                    }
+                }
+            }
+        } else {
+            Timber.e("Unrecognized URI: %s", uri);
+            createErrorDialog(getString(R.string.unrecognized_uri, uri), EXIT);
+            return;
+        }
+
+        formLoaderTask = new FormLoaderTask(instancePath, null, null);
+        Collect.getInstance().getActivityLogger()
+                .logAction(this, "formLoaded", formPath);
+        showDialog(PROGRESS_DIALOG);
+        // show dialog before we execute...
+        formLoaderTask.execute(formPath);
     }
 
     public Bundle getState() {
@@ -559,9 +537,9 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
     }
 
     private void initToolbar() {
-        toolbar = findViewById(R.id.toolbar);
-        setTitle(getString(R.string.loading_form));
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        setTitle(getString(R.string.loading_form));
     }
 
     /**
@@ -574,7 +552,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
             savePointTask.execute();
 
             if (!allowMovingBackwards) {
-                FormController formController = Collect.getInstance().getFormController();
+                FormController formController = getFormController();
                 if (formController != null) {
                     new SaveFormIndexTask(this, formController.getFormIndex()).execute();
                 }
@@ -584,16 +562,18 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         }
     }
 
+    private FormController getFormController() {
+        return Collect.getInstance().getFormController();
+    }
+
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putString(KEY_FORMPATH, formPath);
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
         if (formController != null) {
-            if (formController.getInstancePath() != null) {
-                outState.putString(KEY_INSTANCEPATH, formController
-                        .getInstancePath().getAbsolutePath());
+            if (formController.getInstanceFile() != null) {
+                outState.putString(KEY_INSTANCEPATH, getAbsoluteInstancePath());
             }
             outState.putString(KEY_XPATH,
                     formController.getXPath(formController.getFormIndex()));
@@ -622,15 +602,13 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
     @Override
     protected void onActivityResult(int requestCode, int resultCode, final Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
         if (formController == null) {
             // we must be in the midst of a reload of the FormController.
             // try to save this callback data to the FormLoaderTask
             if (formLoaderTask != null
                     && formLoaderTask.getStatus() != AsyncTask.Status.FINISHED) {
-                formLoaderTask.setActivityResult(requestCode, resultCode,
-                        intent);
+                formLoaderTask.setActivityResult(requestCode, resultCode, intent);
             } else {
                 Timber.e("Got an activityResult without any pending form loader");
             }
@@ -670,7 +648,6 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                 return;
             }
         }
-
 
         switch (requestCode) {
 
@@ -720,10 +697,17 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                 // file
                 ImageConverter.execute(Collect.TMPFILE_PATH, getWidgetWaitingForBinaryData(), this);
                 File fi = new File(Collect.TMPFILE_PATH);
-                String instanceFolder = formController.getInstancePath()
+
+                //revoke permissions granted to this file due its possible usage in
+                //the camera app
+                Uri uri = FileProvider.getUriForFile(this,
+                        BuildConfig.APPLICATION_ID + ".provider",
+                        fi);
+                FileUtils.revokeFileReadWritePermission(this, uri);
+
+                String instanceFolder = formController.getInstanceFile()
                         .getParent();
-                String s = instanceFolder + File.separator
-                        + System.currentTimeMillis() + ".jpg";
+                String s = instanceFolder + File.separator + System.currentTimeMillis() + ".jpg";
 
                 File nf = new File(s);
                 if (!fi.renameTo(nf)) {
@@ -746,9 +730,8 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                 String path = intent
                         .getStringExtra(android.provider.MediaStore.EXTRA_OUTPUT);
                 fi = new File(path);
-                instanceFolder = formController.getInstancePath().getParent();
-                s = instanceFolder + File.separator + System.currentTimeMillis()
-                        + ".jpg";
+                instanceFolder = formController.getInstanceFile().getParent();
+                s = instanceFolder + File.separator + System.currentTimeMillis() + ".jpg";
 
                 nf = new File(s);
                 if (!fi.renameTo(nf)) {
@@ -772,19 +755,14 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                  */
 
                 showDialog(SAVING_IMAGE_DIALOG);
-                Runnable runnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        saveChosenImage(intent.getData());
-                    }
-                };
+                Runnable runnable = () -> saveChosenImage(intent.getData());
                 new Thread(runnable).start();
 
                 break;
             case RequestCodes.AUDIO_CAPTURE:
             case RequestCodes.VIDEO_CAPTURE:
                 Uri mediaUri = intent.getData();
-                saveAudioVideoAnswer(mediaUri);
+                saveFileAnswer(mediaUri);
                 String filePath = MediaUtils.getDataColumn(this, mediaUri, null, null);
                 if (filePath != null) {
                     new File(filePath).delete();
@@ -796,10 +774,23 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                 }
                 break;
 
-
+            case RequestCodes.ARBITRARY_FILE_CHOOSER:
+                // Same with VIDEO_CHOOSER.
             case RequestCodes.AUDIO_CHOOSER:
+                // Same with VIDEO_CHOOSER.
             case RequestCodes.VIDEO_CHOOSER:
-                saveAudioVideoAnswer(intent.getData());
+                /*
+                 * Start a task to save the chosen file/audio/video with a new Thread,
+                 * This could support retrieving file from Google Drive.
+                 * */
+                showDialog(SAVING_DIALOG);
+                Runnable saveFileRunnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        saveChosenFile(intent.getData());
+                    }
+                };
+                new Thread(saveFileRunnable).start();
                 break;
             case RequestCodes.LOCATION_CAPTURE:
                 String sl = intent.getStringExtra(LOCATION_RESULT);
@@ -838,38 +829,44 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         refreshCurrentView();
     }
 
-    private void saveChosenImage(Uri selectedImage) {
-        // Copy file to sdcard
-        String instanceFolder1 = Collect.getInstance().getFormController().getInstancePath()
-                .getParent();
-        String destImagePath = instanceFolder1 + File.separator
-                + System.currentTimeMillis() + ".jpg";
+    /**
+     * Save a copy of the chosen media in Collect's own path such as
+     * "/storage/emulated/0/odk/instances/{form name}/filename",
+     * and if it's from Google Drive and not cached yet, we'll retrieve it using network.
+     * This may take a long time.
+     *
+     * @param selectedFile uri of the selected audio
+     * @see #getFileExtensionFromUri(Uri)
+     */
+    private void saveChosenFile(Uri selectedFile) {
+        String extension = getFileExtensionFromUri(selectedFile);
 
-        File chosenImage;
+        String instanceFolder = Collect.getInstance().getFormController()
+                .getInstanceFile().getParent();
+        String destPath = instanceFolder + File.separator
+                + System.currentTimeMillis() + extension;
+
+        File chosenFile;
         try {
-            chosenImage = MediaUtils.getFileFromUri(this, selectedImage, Images.Media.DATA);
-            if (chosenImage != null) {
-                final File newImage = new File(destImagePath);
-                FileUtils.copyFile(chosenImage, newImage);
-                ImageConverter.execute(newImage.getPath(), getWidgetWaitingForBinaryData(), this);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        dismissDialog(SAVING_IMAGE_DIALOG);
-                        if (getCurrentViewIfODKView() != null) {
-                            getCurrentViewIfODKView().setBinaryData(newImage);
-                        }
-                        saveAnswersForCurrentScreen(DO_NOT_EVALUATE_CONSTRAINTS);
-                        refreshCurrentView();
+            chosenFile = MediaUtils.getFileFromUri(this, selectedFile, Images.Media.DATA);
+            if (chosenFile != null) {
+                final File newFile = new File(destPath);
+                FileUtils.copyFile(chosenFile, newFile);
+                runOnUiThread(() -> {
+                    dismissDialog(SAVING_DIALOG);
+                    if (getCurrentViewIfODKView() != null) {
+                        getCurrentViewIfODKView().setBinaryData(newFile);
                     }
+                    saveAnswersForCurrentScreen(DO_NOT_EVALUATE_CONSTRAINTS);
+                    refreshCurrentView();
                 });
             } else {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        dismissDialog(SAVING_IMAGE_DIALOG);
-                        Timber.e("Could not receive chosen image");
-                        showCustomToast(getString(R.string.error_occured), Toast.LENGTH_SHORT);
+                        dismissDialog(SAVING_DIALOG);
+                        Timber.e("Could not receive chosen file");
+                        ToastUtils.showShortToastInMiddle(R.string.error_occured);
                     }
                 });
             }
@@ -877,17 +874,93 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    dismissDialog(SAVING_IMAGE_DIALOG);
-                    Timber.e("Could not receive chosen image due to connection problem");
-                    showCustomToast(getString(R.string.gdrive_connection_exception), Toast.LENGTH_LONG);
+                    dismissDialog(SAVING_DIALOG);
+                    Timber.e("Could not receive chosen file due to connection problem");
+                    ToastUtils.showLongToastInMiddle(R.string.gdrive_connection_exception);
                 }
             });
         }
     }
 
+    private void saveChosenImage(Uri selectedImage) {
+        // Copy file to sdcard
+        File instanceFile = getFormController().getInstanceFile();
+        if (instanceFile != null) {
+            String instanceFolder1 = instanceFile.getParent();
+            String destImagePath = instanceFolder1 + File.separator + System.currentTimeMillis() + ".jpg";
+
+            File chosenImage;
+            try {
+                chosenImage = MediaUtils.getFileFromUri(this, selectedImage, Images.Media.DATA);
+                if (chosenImage != null) {
+                    final File newImage = new File(destImagePath);
+                    FileUtils.copyFile(chosenImage, newImage);
+                    ImageConverter.execute(newImage.getPath(), getWidgetWaitingForBinaryData(), this);
+                    runOnUiThread(() -> {
+                        dismissDialog(SAVING_IMAGE_DIALOG);
+                        if (getCurrentViewIfODKView() != null) {
+                            getCurrentViewIfODKView().setBinaryData(newImage);
+                        }
+                        saveAnswersForCurrentScreen(DO_NOT_EVALUATE_CONSTRAINTS);
+                        refreshCurrentView();
+                    });
+                } else {
+                    runOnUiThread(() -> {
+                        dismissDialog(SAVING_IMAGE_DIALOG);
+                        Timber.e("Could not receive chosen image");
+                        ToastUtils.showShortToastInMiddle(R.string.error_occured);
+                    });
+                }
+            } catch (GDriveConnectionException e) {
+                runOnUiThread(() -> {
+                    dismissDialog(SAVING_IMAGE_DIALOG);
+                    Timber.e("Could not receive chosen image due to connection problem");
+                    ToastUtils.showLongToastInMiddle(R.string.gdrive_connection_exception);
+                });
+            }
+        } else {
+            ToastUtils.showLongToast(R.string.image_not_saved);
+            Timber.w(getString(R.string.image_not_saved));
+        }
+    }
+
+    /**
+     * Using contentResolver to get a file's extension by the uri returned from OnActivityResult.
+     *
+     * @param fileUri Whose name we want to get
+     * @return The file's extension
+     * @see #onActivityResult(int, int, Intent)
+     * @see #saveChosenFile(Uri)
+     * @see android.content.ContentResolver
+     */
+    private String getFileExtensionFromUri(Uri fileUri) {
+        Cursor returnCursor =
+                getContentResolver().query(fileUri, null, null, null, null);
+        try {
+            if (returnCursor == null) {
+                return "";
+            }
+            int nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+            returnCursor.moveToFirst();
+            String filename = returnCursor.getString(nameIndex);
+            // If the file's name contains extension , we cut it down for latter use (copy a new file).
+            if (filename.lastIndexOf('.') != -1) {
+                return filename.substring(filename.lastIndexOf('.'));
+            } else {
+                // I found some mp3 files' name don't contain extension, but can be played as Audio
+                // So I write so, but I still there are some way to get its extension
+                return "";
+            }
+        } finally {
+            if (returnCursor != null) {
+                returnCursor.close();
+            }
+        }
+    }
+
     private QuestionWidget getWidgetWaitingForBinaryData() {
         QuestionWidget questionWidget = null;
-        for (QuestionWidget qw :  ((ODKView) currentView).getWidgets()) {
+        for (QuestionWidget qw : ((ODKView) currentView).getWidgets()) {
             if (qw.isWaitingForData()) {
                 questionWidget = qw;
             }
@@ -896,7 +969,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         return questionWidget;
     }
 
-    private void saveAudioVideoAnswer(Uri media) {
+    private void saveFileAnswer(Uri media) {
         // For audio/video capture/chooser, we get the URI from the content
         // provider
         // then the widget copies the file and makes a new entry in the
@@ -913,9 +986,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
      * changes, so they're resynchronized here.
      */
     public void refreshCurrentView() {
-        FormController formController = Collect.getInstance()
-                .getFormController();
-        int event = formController.getEvent();
+        int event = getFormController().getEvent();
 
         // When we refresh, repeat dialog state isn't maintained, so step back
         // to the previous
@@ -936,10 +1007,8 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
     public boolean onCreateOptionsMenu(Menu menu) {
         Collect.getInstance().getActivityLogger()
                 .logInstanceAction(this, "onCreateOptionsMenu", "show");
-        super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(R.menu.form_menu, menu);
-
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
@@ -957,8 +1026,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         menu.findItem(R.id.menu_goto).setVisible(useability)
                 .setEnabled(useability);
 
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
 
         useability = (boolean) AdminSharedPreferences.getInstance().get(AdminKeys.KEY_CHANGE_LANGUAGE)
                 && (formController != null)
@@ -977,8 +1045,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
         switch (item.getItemId()) {
             case R.id.menu_languages:
                 Collect.getInstance()
@@ -993,7 +1060,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                         .logInstanceAction(this, "onOptionsItemSelected",
                                 "MENU_SAVE");
                 // don't exit
-                saveDataToDisk(DO_NOT_EXIT, isInstanceComplete(false), null);
+                saveDataToDisk(DO_NOT_EXIT, InstancesDaoHelper.isInstanceComplete(false), null);
                 return true;
             case R.id.menu_goto:
                 state = null;
@@ -1006,6 +1073,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                 }
 
                 if (formController != null) {
+                    formController.getTimerLogger().exitView();
                     formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.HIERARCHY,
                             0, null, false, true);
                 }
@@ -1033,8 +1101,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
      * etc...), true otherwise.
      */
     private boolean saveAnswersForCurrentScreen(boolean evaluateConstraints) {
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
         // only try to save if the current event is a question or a field-list group
         // and current view is an ODKView (occasionally we show blank views that do not have any
         // controls to save data from)
@@ -1047,6 +1114,9 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                         evaluateConstraints);
                 if (constraint != null) {
                     createConstraintToast(constraint.index, constraint.status);
+                    if (formController.indexIsInFieldList() && formController.getQuestionPrompts().length > 1) {
+                        getCurrentViewIfODKView().highlightWidget(constraint.index);
+                    }
                     return false;
                 }
             } catch (JavaRosaException e) {
@@ -1062,7 +1132,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
      * Clears the answer on the screen.
      */
     private void clearAnswer(QuestionWidget qw) {
-        if (qw.getAnswer() != null) {
+        if (qw.getAnswer() != null || qw instanceof DateTimeWidget) {
             qw.clearAnswer();
         }
     }
@@ -1073,8 +1143,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         super.onCreateContextMenu(menu, v, menuInfo);
         Collect.getInstance().getActivityLogger()
                 .logInstanceAction(this, "onCreateContextMenu", "show");
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
 
         menu.add(0, v.getId(), 0, getString(R.string.clear_answer));
         if (formController.indexContainsRepeatableGroup()) {
@@ -1093,10 +1162,10 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
             createDeleteRepeatConfirmDialog();
         } else {
             /*
-            * We don't have the right view here, so we store the View's ID as the
-            * item ID and loop through the possible views to find the one the user
-            * clicked on.
-            */
+             * We don't have the right view here, so we store the View's ID as the
+             * item ID and loop through the possible views to find the one the user
+             * clicked on.
+             */
             boolean shouldClearDialogBeShown;
             for (QuestionWidget qw : getCurrentViewIfODKView().getWidgets()) {
                 shouldClearDialogBeShown = false;
@@ -1130,8 +1199,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
      */
     @Override
     public Object onRetainCustomNonConfigurationInstance() {
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
         // if a form is loading, pass the loader task
         if (formLoaderTask != null
                 && formLoaderTask.getStatus() != AsyncTask.Status.FINISHED) {
@@ -1158,8 +1226,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
      * @return newly created View
      */
     private View createView(int event, boolean advancingPage) {
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
 
         setTitle(formController.getFormTitle());
 
@@ -1179,7 +1246,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                 // checkbox for if finished or ready to send
                 final CheckBox instanceComplete = endView
                         .findViewById(R.id.mark_finished);
-                instanceComplete.setChecked(isInstanceComplete(true));
+                instanceComplete.setChecked(InstancesDaoHelper.isInstanceComplete(true));
 
                 if (!(boolean) AdminSharedPreferences.getInstance().get(AdminKeys.KEY_MARK_AS_FINALIZED)) {
                     instanceComplete.setVisibility(View.GONE);
@@ -1322,7 +1389,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                         event = formController.stepToNextScreenEvent();
                         createErrorDialog(e.getMessage(), DO_NOT_EXIT);
                     } catch (JavaRosaException e1) {
-                        Timber.e(e1);
+                        Timber.d(e1);
                         createErrorDialog(e.getMessage() + "\n\n" + e1.getCause().getMessage(),
                                 DO_NOT_EXIT);
                     }
@@ -1347,7 +1414,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                 }
 
                 if (showNavigationButtons) {
-                    adjustBackNavigationButtonVisibility();
+                    backButton.setEnabled(!formController.isCurrentQuestionFirstInForm() && allowMovingBackwards);
                     nextButton.setEnabled(true);
                 }
                 return odkView;
@@ -1363,7 +1430,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                     event = formController.stepToNextScreenEvent();
                     createErrorDialog(getString(R.string.survey_internal_error), EXIT);
                 } catch (JavaRosaException e) {
-                    Timber.e(e);
+                    Timber.d(e);
                     createErrorDialog(e.getCause().getMessage(), EXIT);
                 }
                 return createView(event, advancingPage);
@@ -1377,32 +1444,18 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         }
     }
 
-    /**
-     * Disables the back button if it is first question....
-     */
-    private void adjustBackNavigationButtonVisibility() {
-        FormController formController = Collect.getInstance().getFormController();
-        try {
-            FormIndex originalFormIndex = formController.getFormIndex();
-            backButton.setEnabled(!formController.isCurrentQuestionFirstInForm() && allowMovingBackwards);
-            if (formController.stepToPreviousEvent() == FormEntryController.EVENT_PROMPT_NEW_REPEAT) {
-                backButton.setEnabled(allowMovingBackwards);
-            }
-            formController.jumpToIndex(originalFormIndex);
-        } catch (JavaRosaException e) {
-            backButton.setEnabled(allowMovingBackwards);
-            Timber.e(e);
-        }
-    }
-
     private View createViewForFormBeginning(int event, boolean advancingPage,
                                             FormController formController) {
         try {
             event = formController.stepToNextScreenEvent();
 
         } catch (JavaRosaException e) {
-            Timber.e(e);
-            createErrorDialog(e.getMessage() + "\n\n" + e.getCause().getMessage(), DO_NOT_EXIT);
+            Timber.d(e);
+            if (e.getMessage().equals(e.getCause().getMessage())) {
+                createErrorDialog(e.getMessage(), DO_NOT_EXIT);
+            } else {
+                createErrorDialog(e.getMessage() + "\n\n" + e.getCause().getMessage(), DO_NOT_EXIT);
+            }
         }
 
         return createView(event, advancingPage);
@@ -1426,8 +1479,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
     private void showNextView() {
         state = null;
         try {
-            FormController formController = Collect.getInstance()
-                    .getFormController();
+            FormController formController = getFormController();
 
             // get constraint behavior preference value with appropriate default
             String constraintBehavior = (String) GeneralSharedPreferences.getInstance()
@@ -1488,7 +1540,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                     break;
             }
         } catch (JavaRosaException e) {
-            Timber.e(e);
+            Timber.d(e);
             createErrorDialog(e.getCause().getMessage(), DO_NOT_EXIT);
         }
     }
@@ -1502,7 +1554,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         if (allowMovingBackwards) {
             state = null;
             try {
-                FormController formController = Collect.getInstance().getFormController();
+                FormController formController = getFormController();
                 if (formController != null) {
                     // The answer is saved on a back swipe, but question constraints are
                     // ignored.
@@ -1542,7 +1594,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                     Timber.w("FormController has a null value");
                 }
             } catch (JavaRosaException e) {
-                Timber.e(e);
+                Timber.d(e);
                 createErrorDialog(e.getCause().getMessage(), DO_NOT_EXIT);
             }
         } else {
@@ -1601,10 +1653,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
 
         // drop keyboard before transition...
         if (currentView != null) {
-            InputMethodManager inputManager = (InputMethodManager) getSystemService(
-                    Context.INPUT_METHOD_SERVICE);
-            inputManager.hideSoftInputFromWindow(currentView.getWindowToken(),
-                    0);
+            SoftKeyboardUtils.hideSoftKeyboard(currentView);
         }
 
         RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
@@ -1642,11 +1691,11 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
 
         Collect.getInstance().getActivityLogger().logInstanceAction(this, "showView", logString);
 
-        FormController formController = Collect.getInstance().getFormController();
+        FormController formController = getFormController();
         if (formController.getEvent() == FormEntryController.EVENT_QUESTION
                 || formController.getEvent() == FormEntryController.EVENT_GROUP
                 || formController.getEvent() == FormEntryController.EVENT_REPEAT) {
-            FormEntryPrompt[] prompts = Collect.getInstance().getFormController()
+            FormEntryPrompt[] prompts = getFormController()
                     .getQuestionPrompts();
             for (FormEntryPrompt p : prompts) {
                 List<TreeElement> attrs = p.getBindAttributes();
@@ -1676,8 +1725,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
      * Creates and displays a dialog displaying the violated constraint.
      */
     private void createConstraintToast(FormIndex index, int saveStatus) {
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
         String constraintText;
         switch (saveStatus) {
             case FormEntryController.ANSWER_CONSTRAINT_VIOLATED:
@@ -1716,27 +1764,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                 return;
         }
 
-        showCustomToast(constraintText, Toast.LENGTH_SHORT);
-    }
-
-    /**
-     * Creates a toast with the specified message.
-     */
-    private void showCustomToast(String message, int duration) {
-        LayoutInflater inflater = (LayoutInflater) getSystemService(
-                Context.LAYOUT_INFLATER_SERVICE);
-
-        View view = inflater.inflate(R.layout.toast_view, null);
-
-        // set the text in the view
-        TextView tv = view.findViewById(R.id.message);
-        tv.setText(message);
-
-        Toast t = new Toast(this);
-        t.setView(view);
-        t.setDuration(duration);
-        t.setGravity(Gravity.CENTER, 0, 0);
-        t.show();
+        ToastUtils.showShortToastInMiddle(constraintText);
     }
 
     /**
@@ -1760,8 +1788,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
             @Override
             public void onClick(DialogInterface dialog, int i) {
                 shownAlertDialogIsGroupRepeat = false;
-                FormController formController = Collect.getInstance()
-                        .getFormController();
+                FormController formController = getFormController();
                 switch (i) {
                     case BUTTON_POSITIVE: // yes, repeat
                         Collect.getInstance()
@@ -1809,17 +1836,14 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
 
                             @Override
                             public void run() {
-                                FormEntryActivity.this.runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        try {
-                                            Thread.sleep(500);
-                                        } catch (InterruptedException e) {
-                                            //This is rare
-                                            Timber.e(e);
-                                        }
-                                        showNextView();
+                                FormEntryActivity.this.runOnUiThread(() -> {
+                                    try {
+                                        Thread.sleep(500);
+                                    } catch (InterruptedException e) {
+                                        //This is rare
+                                        Timber.e(e);
                                     }
+                                    showNextView();
                                 });
                             }
                         }.start();
@@ -1828,8 +1852,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                 }
             }
         };
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
         if (formController.getLastRepeatCount() > 0) {
             alertDialog.setTitle(getString(R.string.leaving_repeat_ask));
             alertDialog.setMessage(getString(R.string.add_another_repeat,
@@ -1902,8 +1925,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                 .getActivityLogger()
                 .logInstanceAction(this, "createDeleteRepeatConfirmDialog",
                         "show");
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
 
         alertDialog = new AlertDialog.Builder(this).create();
         String name = formController.getLastRepeatedGroupName();
@@ -1917,8 +1939,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         DialogInterface.OnClickListener quitListener = new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int i) {
-                FormController formController = Collect.getInstance()
-                        .getFormController();
+                FormController formController = getFormController();
                 switch (i) {
                     case BUTTON_POSITIVE: // yes
                         Collect.getInstance()
@@ -1990,7 +2011,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
     private void createQuitDialog() {
         String title;
         {
-            FormController formController = Collect.getInstance().getFormController();
+            FormController formController = getFormController();
             title = (formController == null) ? null : formController.getFormTitle();
             if (title == null) {
                 title = getString(R.string.no_form_loaded);
@@ -1999,10 +2020,10 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
 
         List<IconMenuItem> items;
         if ((boolean) AdminSharedPreferences.getInstance().get(AdminKeys.KEY_SAVE_MID)) {
-            items = ImmutableList.of(new IconMenuItem(R.drawable.ic_save_grey_32dp_wrapped, R.string.keep_changes),
-                    new IconMenuItem(R.drawable.ic_delete_grey_32dp_wrapped, R.string.do_not_save));
+            items = ImmutableList.of(new IconMenuItem(R.drawable.ic_save, R.string.keep_changes),
+                    new IconMenuItem(R.drawable.ic_delete, R.string.do_not_save));
         } else {
-            items = ImmutableList.of(new IconMenuItem(R.drawable.ic_delete_grey_32dp_wrapped, R.string.do_not_save));
+            items = ImmutableList.of(new IconMenuItem(R.drawable.ic_delete, R.string.do_not_save));
         }
 
         Collect.getInstance().getActivityLogger()
@@ -2019,7 +2040,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                 if (item.getTextResId() == R.string.keep_changes) {
                     Collect.getInstance().getActivityLogger()
                             .logInstanceAction(this, "createQuitDialog", "saveAndExit");
-                    saveDataToDisk(EXIT, isInstanceComplete(false),
+                    saveDataToDisk(EXIT, InstancesDaoHelper.isInstanceComplete(false),
                             null);
                 } else {
                     Collect.getInstance().getActivityLogger()
@@ -2031,11 +2052,12 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                         manager.close();
                     }
 
-                    FormController formController = Collect.getInstance().getFormController();
+                    FormController formController = getFormController();
                     if (formController != null) {
                         formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.FORM_EXIT, 0, null, false, true);
                     }
                     removeTempInstance();
+                    MediaManager.INSTANCE.revertChanges();
                     finishReturnInstance();
                 }
                 alertDialog.dismiss();
@@ -2061,52 +2083,32 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
 
     // Cleanup when user exits a form without saving
     private void removeTempInstance() {
-        FormController formController = Collect.getInstance().getFormController();
+        FormController formController = getFormController();
 
-        if (formController != null && formController.getInstancePath() != null) {
-            SaveToDiskTask.removeSavepointFiles(formController.getInstancePath().getName());
-        }
+        if (formController != null && formController.getInstanceFile() != null) {
+            SaveToDiskTask.removeSavepointFiles(formController.getInstanceFile().getName());
 
-        boolean erase;
+            // if it's not already saved, erase everything
+            if (!InstancesDaoHelper.isInstanceAvailable(getAbsoluteInstancePath())) {
+                // delete media first
+                String instanceFolder = formController.getInstanceFile().getParent();
+                Timber.i("Attempting to delete: %s", instanceFolder);
+                File file = formController.getInstanceFile().getParentFile();
+                int images = MediaUtils.deleteImagesInFolderFromMediaProvider(file);
+                int audio = MediaUtils.deleteAudioInFolderFromMediaProvider(file);
+                int video = MediaUtils.deleteVideoInFolderFromMediaProvider(file);
 
-        Cursor c = null;
-        try {
-            c = new InstancesDao().getInstancesCursorForFilePath(formController.getInstancePath()
-                    .getAbsolutePath());
-            erase = c.getCount() < 1;
-        } finally {
-            if (c != null) {
-                c.close();
+                Timber.i("Removed from content providers: %d image files, %d audio files and %d audio files.",
+                        images, audio, video);
+                FileUtils.purgeMediaPath(instanceFolder);
             }
+        } else {
+            Timber.w("null returned by getFormController()");
         }
+    }
 
-        // if it's not already saved, erase everything
-        if (erase) {
-            // delete media first
-            String instanceFolder = formController.getInstancePath()
-                    .getParent();
-            Timber.i("Attempting to delete: %s", instanceFolder);
-            int images = MediaUtils
-                    .deleteImagesInFolderFromMediaProvider(formController
-                            .getInstancePath().getParentFile());
-            int audio = MediaUtils
-                    .deleteAudioInFolderFromMediaProvider(formController
-                            .getInstancePath().getParentFile());
-            int video = MediaUtils
-                    .deleteVideoInFolderFromMediaProvider(formController
-                            .getInstancePath().getParentFile());
-
-            Timber.i("Removed from content providers: %d image files, %d audio files and %d audio files.",
-                    images, audio, video);
-            File f = new File(instanceFolder);
-            if (f.exists() && f.isDirectory()) {
-                for (File del : f.listFiles()) {
-                    Timber.i("Deleting file: %s", del.getAbsolutePath());
-                    del.delete();
-                }
-                f.delete();
-            }
-        }
+    private String getAbsoluteInstancePath() {
+        return getFormController().getInstanceFile().getAbsolutePath();
     }
 
     /**
@@ -2169,8 +2171,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
     private void createLanguageDialog() {
         Collect.getInstance().getActivityLogger()
                 .logInstanceAction(this, "createLanguageDialog", "show");
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
         final String[] languages = formController.getLanguages();
         int selected = -1;
         if (languages != null) {
@@ -2196,7 +2197,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                                 String selection = FormsColumns.FORM_FILE_PATH
                                         + "=?";
                                 String[] selectArgs = {formPath};
-                                int updated = formsDao.updateForm(values, selection, selectArgs);
+                                int updated = new FormsDao().updateForm(values, selection, selectArgs);
                                 Timber.i("Updated language to: %s in %d rows",
                                         languages[whichButton],
                                         updated);
@@ -2208,10 +2209,8 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                                                 "createLanguageDialog",
                                                 "changeLanguage."
                                                         + languages[whichButton]);
-                                FormController formController = Collect
-                                        .getInstance().getFormController();
-                                formController
-                                        .setLanguage(languages[whichButton]);
+                                FormController formController = getFormController();
+                                formController.setLanguage(languages[whichButton]);
                                 dialog.dismiss();
                                 if (formController.currentPromptIsQuestion()) {
                                     saveAnswersForCurrentScreen(DO_NOT_EVALUATE_CONSTRAINTS);
@@ -2242,7 +2241,6 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
     protected Dialog onCreateDialog(int id) {
         switch (id) {
             case PROGRESS_DIALOG:
-                Timber.i("Creating PROGRESS_DIALOG");
                 Collect.getInstance()
                         .getActivityLogger()
                         .logInstanceAction(this, "onCreateDialog.PROGRESS_DIALOG",
@@ -2276,7 +2274,6 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                         loadingButtonListener);
                 return progressDialog;
             case SAVING_DIALOG:
-                Timber.i("Creating SAVING_DIALOG");
                 Collect.getInstance()
                         .getActivityLogger()
                         .logInstanceAction(this, "onCreateDialog.SAVING_DIALOG",
@@ -2323,7 +2320,6 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
      * Dismiss any showing dialogs that we manually manage.
      */
     private void dismissDialogs() {
-        Timber.i("Dismiss dialogs");
         if (alertDialog != null && alertDialog.isShowing()) {
             alertDialog.dismiss();
         }
@@ -2331,8 +2327,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
 
     @Override
     protected void onPause() {
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
         dismissDialogs();
         // make sure we're not already saving to disk. if we are, currentPrompt
         // is getting constantly updated
@@ -2348,13 +2343,17 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
             getCurrentViewIfODKView().stopAudio();
         }
 
-
         super.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+
+        if (!checkIfStoragePermissionsGranted(this)) {
+            onResumeWasCalledWithoutPermissions = true;
+            return;
+        }
 
         String navigation = (String) GeneralSharedPreferences.getInstance().get(PreferenceKeys.KEY_NAVIGATION);
         showNavigationButtons = navigation.contains(PreferenceKeys.NAVIGATION_BUTTONS);
@@ -2369,7 +2368,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
             }
         }
 
-        FormController formController = Collect.getInstance().getFormController();
+        FormController formController = getFormController();
         Collect.getInstance().getActivityLogger().open();
 
         if (formLoaderTask != null) {
@@ -2378,7 +2377,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                     && formLoaderTask.getStatus() == AsyncTask.Status.FINISHED) {
                 FormController fec = formLoaderTask.getFormController();
                 if (fec != null) {
-                    loadingComplete(formLoaderTask);
+                    loadingComplete(formLoaderTask, formLoaderTask.getFormDef());
                 } else {
                     dismissDialog(PROGRESS_DIALOG);
                     FormLoaderTask t = formLoaderTask;
@@ -2393,6 +2392,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
             if (formController == null) {
                 // there is no formController -- fire MainMenu activity?
                 startActivity(new Intent(this, MainMenuActivity.class));
+                finish();
                 return;
             } else {
                 refreshCurrentView();
@@ -2462,15 +2462,13 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
             }
         }
         releaseOdkView();
-
         super.onDestroy();
 
     }
 
-    private int animationCompletionSet = 0;
+    private int animationCompletionSet;
 
     private void afterAllAnimations() {
-        Timber.i("afterAllAnimations");
         if (staleView != null) {
             if (staleView instanceof ODKView) {
                 // http://code.google.com/p/android/issues/detail?id=8488
@@ -2487,9 +2485,6 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
 
     @Override
     public void onAnimationEnd(Animation animation) {
-        Timber.i("onAnimationEnd %s",
-                ((animation == inAnimation) ? "in"
-                        : ((animation == outAnimation) ? "out" : "other")));
         if (inAnimation == animation) {
             animationCompletionSet |= 1;
         } else if (outAnimation == animation) {
@@ -2505,18 +2500,10 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
 
     @Override
     public void onAnimationRepeat(Animation animation) {
-        // Added by AnimationListener interface.
-        Timber.i("onAnimationRepeat %s",
-                ((animation == inAnimation) ? "in"
-                        : ((animation == outAnimation) ? "out" : "other")));
     }
 
     @Override
     public void onAnimationStart(Animation animation) {
-        // Added by AnimationListener interface.
-        Timber.i("onAnimationStart %s",
-                ((animation == inAnimation) ? "in"
-                        : ((animation == outAnimation) ? "out" : "other")));
     }
 
     /**
@@ -2524,7 +2511,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
      * loading a form.
      */
     @Override
-    public void loadingComplete(FormLoaderTask task) {
+    public void loadingComplete(FormLoaderTask task, FormDef formDef) {
         dismissDialog(PROGRESS_DIALOG);
 
         final FormController formController = task.getFormController();
@@ -2548,20 +2535,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         String[] languageTest = formController.getLanguages();
         if (languageTest != null) {
             String defaultLanguage = formController.getLanguage();
-            String newLanguage = "";
-            Cursor c = null;
-            try {
-                c = formsDao.getFormsCursorForFormFilePath(formPath);
-                if (c.getCount() == 1) {
-                    c.moveToFirst();
-                    newLanguage = c.getString(c
-                            .getColumnIndex(FormsColumns.LANGUAGE));
-                }
-            } finally {
-                if (c != null) {
-                    c.close();
-                }
-            }
+            String newLanguage = FormsDaoHelper.getFormLanguage(formPath);
 
             long start = System.currentTimeMillis();
             Timber.i("calling formController.setLanguage");
@@ -2598,16 +2572,11 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         boolean hasUsedSavepoint = task.hasUsedSavepoint();
 
         if (hasUsedSavepoint) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    ToastUtils.showLongToast(R.string.savepoint_used);
-                }
-            });
+            runOnUiThread(() -> ToastUtils.showLongToast(R.string.savepoint_used));
         }
 
         // Set saved answer path
-        if (formController.getInstancePath() == null) {
+        if (formController.getInstanceFile() == null) {
 
             // Create new answer folder.
             String time = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss",
@@ -2618,15 +2587,13 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                     + time;
             if (FileUtils.createFolder(path)) {
                 File instanceFile = new File(path + File.separator + file + "_" + time + ".xml");
-                formController.setInstancePath(instanceFile);
+                formController.setInstanceFile(instanceFile);
             }
 
             formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.FORM_START, 0, null, false, true);
         } else {
             Intent reqIntent = getIntent();
             boolean showFirst = reqIntent.getBooleanExtra("start", false);
-
-            formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.FORM_RESUME, 0, null, false, true);
 
             if (!showFirst) {
                 // we've just loaded a saved form, so start in the hierarchy view
@@ -2642,6 +2609,8 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
 
                 String formMode = reqIntent.getStringExtra(ApplicationConstants.BundleKeys.FORM_MODE);
                 if (formMode == null || ApplicationConstants.FormModes.EDIT_SAVED.equalsIgnoreCase(formMode)) {
+                    formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.FORM_RESUME, 0, null, false, true);
+                    formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.HIERARCHY, 0, null, false, true);
                     startActivity(new Intent(this, EditFormHierarchyActivity.class));
                     return; // so we don't show the intro screen before jumping to the hierarchy
                 } else {
@@ -2650,6 +2619,8 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                     }
                     finish();
                 }
+            } else {
+                formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.FORM_RESUME, 0, null, false, true);
             }
         }
 
@@ -2677,8 +2648,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         dismissDialog(SAVING_DIALOG);
 
         int saveStatus = saveResult.getSaveResult();
-        FormController formController = Collect.getInstance()
-                .getFormController();
+        FormController formController = getFormController();
         switch (saveStatus) {
             case SaveToDiskTask.SAVED:
                 ToastUtils.showShortToast(R.string.data_saved_ok);
@@ -2716,6 +2686,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
                 break;
             case FormEntryController.ANSWER_CONSTRAINT_VIOLATED:
             case FormEntryController.ANSWER_REQUIRED_BUT_EMPTY:
+                formController.getTimerLogger().exitView();
                 formController.getTimerLogger().logTimerEvent(TimerLogger.EventTypes.CONSTRAINT_ERROR, 0, null, false, true);
                 refreshCurrentView();
 
@@ -2744,51 +2715,6 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         }
     }
 
-    /**
-     * Checks the database to determine if the current instance being edited has
-     * already been 'marked completed'. A form can be 'unmarked' complete and
-     * then resaved.
-     *
-     * @return true if form has been marked completed, false otherwise.
-     */
-    private boolean isInstanceComplete(boolean end) {
-        // default to false if we're mid form
-        boolean complete = false;
-
-        FormController formController = Collect.getInstance().getFormController();
-        if (formController != null) {
-            // if we're at the end of the form, then check the preferences
-            if (end) {
-                // First get the value from the preferences
-                complete = (boolean) GeneralSharedPreferences
-                        .getInstance()
-                        .get(PreferenceKeys.KEY_COMPLETED_DEFAULT);
-            }
-
-            // Then see if we've already marked this form as complete before
-            Cursor c = null;
-            try {
-                c = new InstancesDao().getInstancesCursorForFilePath(formController.getInstancePath()
-                        .getAbsolutePath());
-                if (c != null && c.getCount() > 0) {
-                    c.moveToFirst();
-                    String status = c.getString(c
-                            .getColumnIndex(InstanceColumns.STATUS));
-                    if (InstanceProviderAPI.STATUS_COMPLETE.compareTo(status) == 0) {
-                        complete = true;
-                    }
-                }
-            } finally {
-                if (c != null) {
-                    c.close();
-                }
-            }
-        } else {
-            Timber.w("FormController has a null value");
-        }
-        return complete;
-    }
-
     public void next() {
         if (!beenSwiped) {
             beenSwiped = true;
@@ -2801,29 +2727,12 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
      * requested.
      */
     private void finishReturnInstance() {
-        FormController formController = Collect.getInstance()
-                .getFormController();
         String action = getIntent().getAction();
-        if (Intent.ACTION_PICK.equals(action)
-                || Intent.ACTION_EDIT.equals(action)) {
+        if (Intent.ACTION_PICK.equals(action) || Intent.ACTION_EDIT.equals(action)) {
             // caller is waiting on a picked form
-            Cursor c = null;
-            try {
-                c = new InstancesDao().getInstancesCursorForFilePath(formController.getInstancePath()
-                        .getAbsolutePath());
-                if (c.getCount() > 0) {
-                    // should only be one...
-                    c.moveToFirst();
-                    String id = c.getString(c
-                            .getColumnIndex(InstanceColumns._ID));
-                    Uri instance = Uri.withAppendedPath(
-                            InstanceColumns.CONTENT_URI, id);
-                    setResult(RESULT_OK, new Intent().setData(instance));
-                }
-            } finally {
-                if (c != null) {
-                    c.close();
-                }
+            Uri uri = InstancesDaoHelper.getLastInstanceUri(getAbsoluteInstancePath());
+            if (uri != null) {
+                setResult(RESULT_OK, new Intent().setData(uri));
             }
         }
         finish();
@@ -2841,7 +2750,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         String navigation = (String) GeneralSharedPreferences.getInstance()
                 .get(PreferenceKeys.KEY_NAVIGATION);
 
-        if (navigation.contains(PreferenceKeys.NAVIGATION_SWIPE)) {
+        if (navigation.contains(PreferenceKeys.NAVIGATION_SWIPE) && doSwipe) {
             // Looks for user swipes. If the user has swiped, move to the
             // appropriate screen.
 
@@ -2945,9 +2854,7 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
     }
 
     private void sendSavedBroadcast() {
-        Intent i = new Intent();
-        i.setAction("org.odk.collect.android.FormSaved");
-        this.sendBroadcast(i);
+        sendBroadcast(new Intent("org.odk.collect.android.FormSaved"));
     }
 
     @Override
@@ -2980,6 +2887,14 @@ public class FormEntryActivity extends AppCompatActivity implements AnimationLis
         ODKView odkView = getCurrentViewIfODKView();
         if (odkView != null) {
             odkView.setBinaryData(date);
+        }
+    }
+
+    @Override
+    public void onRankingChanged(List<String> values) {
+        ODKView odkView = getCurrentViewIfODKView();
+        if (odkView != null) {
+            odkView.setBinaryData(values);
         }
     }
 

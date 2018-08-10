@@ -22,7 +22,6 @@ import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.view.Window;
@@ -37,6 +36,7 @@ import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.location.client.LocationClient;
 import org.odk.collect.android.location.client.LocationClients;
 import org.odk.collect.android.spatial.MapHelper;
+import org.odk.collect.android.utilities.GeoPointUtils;
 import org.odk.collect.android.utilities.ToastUtils;
 import org.odk.collect.android.widgets.GeoPointWidget;
 import org.osmdroid.events.MapEventsReceiver;
@@ -51,12 +51,14 @@ import java.text.DecimalFormat;
 
 import timber.log.Timber;
 
+import static org.odk.collect.android.utilities.PermissionUtils.checkIfLocationPermissionsGranted;
+
 /**
  * Version of the GeoPointMapActivity that uses the new OSMDDroid
  *
  * @author jonnordling@gmail.com
  */
-public class GeoPointOsmMapActivity extends FragmentActivity implements LocationListener,
+public class GeoPointOsmMapActivity extends CollectAbstractActivity implements LocationListener,
         Marker.OnMarkerDragListener, MapEventsReceiver, IRegisterReceiver,
         LocationClient.LocationClientListener {
 
@@ -65,7 +67,7 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
     //private GoogleMap map;
     private MapView map;
 
-    private Handler handler = new Handler();
+    private final Handler handler = new Handler();
     private Marker marker;
 
     private GeoPoint latLng;
@@ -82,7 +84,7 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
     private boolean isDragged;
     private ImageButton showLocationButton;
 
-    private int locationCount = 0;
+    private int locationCount;
 
     private MapHelper helper;
 
@@ -98,12 +100,18 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
     private boolean draggable;
     private boolean intentDraggable;
     private boolean locationFromIntent;
-    private int locationCountNum = 0;
+    private int locationCountNum;
     private boolean foundFirstLocation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (!checkIfLocationPermissionsGranted(this)) {
+            finish();
+            return;
+        }
+
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         if (savedInstanceState != null) {
@@ -129,7 +137,7 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
         }
 
         marker = new Marker(map);
-        marker.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_place_black_36dp));
+        marker.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_place_black));
         myLocationOverlay = new MyLocationNewOverlay(map);
 
         handler.postDelayed(new Runnable() {
@@ -194,13 +202,12 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
         layersButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                helper.showLayersDialog(GeoPointOsmMapActivity.this);
+                helper.showLayersDialog();
 
             }
         });
 
-
-        zoomDialogView = getLayoutInflater().inflate(R.layout.geopoint_zoom_dialog, null);
+        zoomDialogView = getLayoutInflater().inflate(R.layout.geo_zoom_dialog, null);
 
         zoomLocationButton = zoomDialogView.findViewById(R.id.zoom_location);
         zoomLocationButton.setOnClickListener(new View.OnClickListener() {
@@ -212,7 +219,7 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
             }
         });
 
-        zoomPointButton = zoomDialogView.findViewById(R.id.zoom_point);
+        zoomPointButton = zoomDialogView.findViewById(R.id.zoom_saved_location);
         zoomPointButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -274,8 +281,6 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
                 isDragged = true;
                 draggable = false; // If data loaded, must clear first
                 locationFromIntent = true;
-
-
             }
         }
 
@@ -288,7 +293,6 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
             zoomToPoint();
         }
     }
-
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -321,7 +325,6 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
         Collect.getInstance().getActivityLogger().logOnStop(this);
         super.onStop();
     }
-
 
     private void upMyLocationOverlayLayers() {
         showLocationButton.setClickable(marker != null);
@@ -425,7 +428,7 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
                     foundFirstLocation = true;
                 }
                 locationStatus.setText(
-                        getString(R.string.location_provider_accuracy, this.location.getProvider(),
+                        getString(R.string.location_provider_accuracy, GeoPointUtils.capitalizeGps(this.location.getProvider()),
                                 truncateFloat(this.location.getAccuracy())));
             } else {
                 // Prevent from forever increasing
@@ -433,7 +436,6 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
                     locationCountNum++;
                 }
             }
-
 
             //if (location.getLatitude() != marker.getPosition().getLatitude() & location
             // .getLongitude() != marker.getPosition().getLongitude()) {
@@ -485,7 +487,7 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
         showLocationButton.setEnabled(true);
         map.invalidate();
         marker.setPosition(geoPoint);
-        marker.setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_place_black_36dp));
+        marker.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_place_black));
         marker.setDraggable(true);
         latLng = geoPoint;
         isDragged = true;
@@ -519,7 +521,7 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
         if (myLocationOverlay.getMyLocation() != null) {
             zoomLocationButton.setEnabled(true);
             zoomLocationButton.setBackgroundColor(Color.parseColor("#50cccccc"));
-            zoomLocationButton.setTextColor(Color.parseColor("#ff333333"));
+            zoomLocationButton.setTextColor(themeUtils.getPrimaryTextColor());
         } else {
             zoomLocationButton.setEnabled(false);
             zoomLocationButton.setBackgroundColor(Color.parseColor("#50e2e2e2"));
@@ -529,7 +531,7 @@ public class GeoPointOsmMapActivity extends FragmentActivity implements Location
         if (latLng != null & !setClear) {
             zoomPointButton.setEnabled(true);
             zoomPointButton.setBackgroundColor(Color.parseColor("#50cccccc"));
-            zoomPointButton.setTextColor(Color.parseColor("#ff333333"));
+            zoomPointButton.setTextColor(themeUtils.getPrimaryTextColor());
         } else {
             zoomPointButton.setEnabled(false);
             zoomPointButton.setBackgroundColor(Color.parseColor("#50e2e2e2"));
