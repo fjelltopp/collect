@@ -17,24 +17,19 @@ package org.odk.collect.android.widgets;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.support.annotation.NonNull;
-import android.support.v4.content.ContextCompat;
-import android.text.Editable;
 import android.text.Selection;
-import android.text.TextWatcher;
 import android.text.method.TextKeyListener;
 import android.text.method.TextKeyListener.Capitalize;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TableLayout;
 
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.StringData;
 import org.javarosa.form.api.FormEntryPrompt;
-import org.odk.collect.android.R;
-import org.odk.collect.android.application.Collect;
+import org.odk.collect.android.utilities.SoftKeyboardUtils;
 import org.odk.collect.android.utilities.ViewIds;
 
 import timber.log.Timber;
@@ -48,17 +43,10 @@ import timber.log.Timber;
 @SuppressLint("ViewConstructor")
 public class StringWidget extends QuestionWidget {
     private static final String ROWS = "rows";
-    private EditText answerText;
+    boolean readOnly;
+    private final EditText answerText;
 
-    boolean readOnly = false;
-
-    public StringWidget(Context context, FormEntryPrompt prompt, boolean readOnlyOverride) {
-        this(context, prompt, readOnlyOverride, true);
-        setupChangeListener();
-    }
-
-    protected StringWidget(Context context, FormEntryPrompt prompt, boolean readOnlyOverride,
-                           boolean derived) {
+    protected StringWidget(Context context, FormEntryPrompt prompt, boolean readOnlyOverride) {
         super(context, prompt);
 
         answerText = new EditText(context);
@@ -111,37 +99,11 @@ public class StringWidget extends QuestionWidget {
         if (readOnly) {
             answerText.setBackground(null);
             answerText.setEnabled(false);
-            answerText.setTextColor(ContextCompat.getColor(context, R.color.primaryTextColor));
+            answerText.setTextColor(themeUtils.getPrimaryTextColor());
             answerText.setFocusable(false);
         }
 
         addAnswerView(answerText);
-    }
-
-    protected void setupChangeListener() {
-        answerText.addTextChangedListener(new TextWatcher() {
-            private String oldText = "";
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (!s.toString().equals(oldText)) {
-                    Collect.getInstance().getActivityLogger()
-                            .logInstanceAction(this, "answerTextChanged", s.toString(),
-                                    getFormEntryPrompt().getIndex());
-                }
-            }
-
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count,
-                                          int after) {
-                oldText = s.toString();
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before,
-                                      int count) {
-            }
-        });
     }
 
     @Override
@@ -166,15 +128,10 @@ public class StringWidget extends QuestionWidget {
         return answerText.getText().toString();
     }
 
-
     @Override
     public void setFocus(Context context) {
-        // Put focus on text input field and display soft keyboard if appropriate.
-        answerText.requestFocus();
-        InputMethodManager inputManager =
-                (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
         if (!readOnly) {
-            inputManager.showSoftInput(answerText, 0);
+            SoftKeyboardUtils.showSoftKeyboard(answerText);
             /*
              * If you do a multi-question screen after a "add another group" dialog, this won't
              * automatically pop up. It's an Android issue.
@@ -185,22 +142,19 @@ public class StringWidget extends QuestionWidget {
              * is focused before the dialog pops up, everything works fine. great.
              */
         } else {
-            inputManager.hideSoftInputFromWindow(answerText.getWindowToken(), 0);
+            SoftKeyboardUtils.hideSoftKeyboard(answerText);
         }
     }
-
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         return !event.isAltPressed() && super.onKeyDown(keyCode, event);
     }
 
-
     @Override
     public void setOnLongClickListener(OnLongClickListener l) {
         answerText.setOnLongClickListener(l);
     }
-
 
     @Override
     public void cancelLongPress() {

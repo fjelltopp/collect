@@ -19,7 +19,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -28,13 +27,16 @@ import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.StringData;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
+import org.odk.collect.android.activities.FormEntryActivity;
 import org.odk.collect.android.activities.GeoShapeGoogleMapActivity;
 import org.odk.collect.android.activities.GeoShapeOsmMapActivity;
+import org.odk.collect.android.listeners.PermissionListener;
 import org.odk.collect.android.preferences.PreferenceKeys;
 import org.odk.collect.android.utilities.PlayServicesUtil;
 import org.odk.collect.android.widgets.interfaces.BinaryWidget;
 
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
+import static org.odk.collect.android.utilities.PermissionUtils.requestLocationPermissions;
 
 /**
  * GeoShapeWidget is the widget that allows the user to get Collect multiple GPS points.
@@ -48,8 +50,8 @@ public class GeoShapeWidget extends QuestionWidget implements BinaryWidget {
     public static final String GOOGLE_MAP_KEY = "google_maps";
     public SharedPreferences sharedPreferences;
     public String mapSDK;
-    private Button createShapeButton;
-    private TextView answerDisplay;
+    private final Button createShapeButton;
+    private final TextView answerDisplay;
 
     public GeoShapeWidget(Context context, FormEntryPrompt prompt) {
         super(context, prompt);
@@ -132,13 +134,6 @@ public class GeoShapeWidget extends QuestionWidget implements BinaryWidget {
     }
 
     @Override
-    public void setFocus(Context context) {
-        InputMethodManager inputManager = (InputMethodManager) context
-                .getSystemService(Context.INPUT_METHOD_SERVICE);
-        inputManager.hideSoftInputFromWindow(this.getWindowToken(), 0);
-    }
-
-    @Override
     public void setOnLongClickListener(OnLongClickListener l) {
         createShapeButton.setOnLongClickListener(l);
         answerDisplay.setOnLongClickListener(l);
@@ -146,7 +141,16 @@ public class GeoShapeWidget extends QuestionWidget implements BinaryWidget {
 
     @Override
     public void onButtonClick(int buttonId) {
-        waitForData();
-        startGeoShapeActivity();
+        requestLocationPermissions((FormEntryActivity) getContext(), new PermissionListener() {
+            @Override
+            public void granted() {
+                waitForData();
+                startGeoShapeActivity();
+            }
+
+            @Override
+            public void denied() {
+            }
+        });
     }
 }

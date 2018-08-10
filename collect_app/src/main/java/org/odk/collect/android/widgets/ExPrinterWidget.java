@@ -115,7 +115,7 @@ import org.odk.collect.android.widgets.interfaces.BinaryWidget;
  */
 public class ExPrinterWidget extends QuestionWidget implements BinaryWidget {
 
-    private Button launchIntentButton;
+    private final Button launchIntentButton;
 
     public ExPrinterWidget(Context context, FormEntryPrompt prompt) {
         super(context, prompt);
@@ -187,12 +187,10 @@ public class ExPrinterWidget extends QuestionWidget implements BinaryWidget {
     public void clearAnswer() {
     }
 
-
     @Override
     public IAnswerData getAnswer() {
         return getFormEntryPrompt().getAnswerValue();
     }
-
 
     /**
      * Allows answer to be set externally in {@link FormEntryActivity}.
@@ -222,7 +220,6 @@ public class ExPrinterWidget extends QuestionWidget implements BinaryWidget {
         super.cancelLongPress();
         launchIntentButton.cancelLongPress();
     }
-
 
     @Override
     public void onButtonClick(int buttonId) {

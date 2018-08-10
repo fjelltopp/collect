@@ -15,13 +15,11 @@
 package org.odk.collect.android.activities;
 
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.support.v4.app.FragmentActivity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
@@ -34,7 +32,6 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnMapLongClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMarkerDragListener;
-import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -45,12 +42,15 @@ import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.location.client.LocationClient;
 import org.odk.collect.android.location.client.LocationClients;
 import org.odk.collect.android.spatial.MapHelper;
+import org.odk.collect.android.utilities.GeoPointUtils;
 import org.odk.collect.android.utilities.ToastUtils;
 import org.odk.collect.android.widgets.GeoPointWidget;
 
 import java.text.DecimalFormat;
 
 import timber.log.Timber;
+
+import static org.odk.collect.android.utilities.PermissionUtils.checkIfLocationPermissionsGranted;
 
 /**
  * Version of the GeoPointMapActivity that uses the new Maps v2 API and Fragments to enable
@@ -59,7 +59,7 @@ import timber.log.Timber;
  * @author guisalmon@gmail.com
  * @author jonnordling@gmail.com
  */
-public class GeoPointMapActivity extends FragmentActivity implements OnMarkerDragListener, OnMapLongClickListener,
+public class GeoPointMapActivity extends CollectAbstractActivity implements OnMarkerDragListener, OnMapLongClickListener,
         LocationClient.LocationClientListener, LocationListener {
 
     private static final String LOCATION_COUNT = "locationCount";
@@ -80,7 +80,7 @@ public class GeoPointMapActivity extends FragmentActivity implements OnMarkerDra
     private boolean isDragged;
     private ImageButton showLocation;
 
-    private int locationCount = 0;
+    private int locationCount;
 
     private MapHelper helper;
     //private KmlLayer kk;
@@ -106,8 +106,13 @@ public class GeoPointMapActivity extends FragmentActivity implements OnMarkerDra
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
 
+        if (!checkIfLocationPermissionsGranted(this)) {
+            finish();
+            return;
+        }
+
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
 
         if (savedInstanceState != null) {
             locationCount = savedInstanceState.getInt(LOCATION_COUNT);
@@ -129,14 +134,11 @@ public class GeoPointMapActivity extends FragmentActivity implements OnMarkerDra
         showLocation = findViewById(R.id.show_location);
 
         locationClient = LocationClients.clientForContext(this);
-        locationClient.setListener(this);
 
         isMapReady = false;
-        ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMapAsync(new OnMapReadyCallback() {
-            @Override
-            public void onMapReady(GoogleMap googleMap) {
-                setupMap(googleMap);
-            }
+        ((SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map)).getMapAsync(googleMap -> {
+            setupMap(googleMap);
+            locationClient.setListener(this);
         });
     }
 
@@ -181,7 +183,6 @@ public class GeoPointMapActivity extends FragmentActivity implements OnMarkerDra
         finish();
     }
 
-
     public String getResultString(Location location) {
         return String.format("%s %s %s %s", location.getLatitude(), location.getLongitude(), location.getAltitude(), location.getAccuracy());
     }
@@ -206,7 +207,6 @@ public class GeoPointMapActivity extends FragmentActivity implements OnMarkerDra
         markerOptions = new MarkerOptions();
         helper = new MapHelper(this, map);
 
-
         ImageButton acceptLocation = findViewById(R.id.accept_location);
 
         acceptLocation.setOnClickListener(new OnClickListener() {
@@ -219,89 +219,67 @@ public class GeoPointMapActivity extends FragmentActivity implements OnMarkerDra
         });
 
         reloadLocation.setEnabled(false);
-        reloadLocation.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (marker != null) {
-                    marker.remove();
-                }
-                latLng = null;
-                marker = null;
-                setClear = false;
-                latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                markerOptions.position(latLng);
-                if (marker == null) {
-                    marker = map.addMarker(markerOptions);
-                    if (draggable && !readOnly) {
-                        marker.setDraggable(true);
-                    }
-                }
-                captureLocation = true;
-                isDragged = false;
-                zoomToPoint();
+        reloadLocation.setOnClickListener(v -> {
+            if (marker != null) {
+                marker.remove();
             }
+            latLng = null;
+            marker = null;
+            setClear = false;
+            latLng = new LatLng(location.getLatitude(), location.getLongitude());
+            markerOptions.position(latLng);
+            if (marker == null) {
+                marker = map.addMarker(markerOptions);
+                if (draggable && !readOnly) {
+                    marker.setDraggable(true);
+                }
+            }
+            captureLocation = true;
+            isDragged = false;
+            zoomToPoint();
         });
 
         // Focuses on marked location
         //showLocation.setClickable(false);
         showLocation.setEnabled(false);
-        showLocation.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showZoomDialog();
-            }
-        });
+        showLocation.setOnClickListener(v -> showZoomDialog());
 
         // Menu Layer Toggle
         ImageButton layers = findViewById(R.id.layer_menu);
-        layers.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                helper.showLayersDialog(GeoPointMapActivity.this);
-            }
-        });
-        zoomDialogView = getLayoutInflater().inflate(R.layout.geopoint_zoom_dialog, null);
+        layers.setOnClickListener(v -> helper.showLayersDialog());
+        zoomDialogView = getLayoutInflater().inflate(R.layout.geo_zoom_dialog, null);
         zoomLocationButton = zoomDialogView.findViewById(R.id.zoom_location);
-        zoomLocationButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                zoomToLocation();
-                zoomDialog.dismiss();
-            }
+        zoomLocationButton.setOnClickListener(v -> {
+            zoomToLocation();
+            zoomDialog.dismiss();
         });
 
-        zoomPointButton = zoomDialogView.findViewById(R.id.zoom_point);
-        zoomPointButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                zoomToPoint();
-                zoomDialog.dismiss();
-            }
+        zoomPointButton = zoomDialogView.findViewById(R.id.zoom_saved_location);
+        zoomPointButton.setOnClickListener(v -> {
+            zoomToPoint();
+            zoomDialog.dismiss();
         });
 
         ImageButton clearPointButton = findViewById(R.id.clear);
-        clearPointButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (marker != null) {
-                    marker.remove();
-                }
-                if (location != null) {
-                    reloadLocation.setEnabled(true);
-                    // locationStatus.setVisibility(View.VISIBLE);
-                }
-                // reloadLocation.setEnabled(true);
-                locationInfo.setVisibility(View.VISIBLE);
-                locationStatus.setVisibility(View.VISIBLE);
-                latLng = null;
-                marker = null;
-                setClear = true;
-                isDragged = false;
-                captureLocation = false;
-                draggable = intentDraggable;
-                locationFromIntent = false;
-                overlayMyLocationLayers();
+        clearPointButton.setOnClickListener(v -> {
+            if (marker != null) {
+                marker.remove();
             }
+            if (location != null) {
+                reloadLocation.setEnabled(true);
+                // locationStatus.setVisibility(View.VISIBLE);
+            }
+            // reloadLocation.setEnabled(true);
+            locationInfo.setVisibility(View.VISIBLE);
+            locationStatus.setVisibility(View.VISIBLE);
+            latLng = null;
+            marker = null;
+            setClear = true;
+            isDragged = false;
+            captureLocation = false;
+            draggable = intentDraggable;
+            locationFromIntent = false;
+            overlayMyLocationLayers();
         });
 
         Intent intent = getIntent();
@@ -477,17 +455,10 @@ public class GeoPointMapActivity extends FragmentActivity implements OnMarkerDra
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle(getString(R.string.zoom_to_where));
             builder.setView(zoomDialogView)
-                    .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int id) {
-                            dialog.cancel();
-                        }
-                    })
-                    .setOnCancelListener(new DialogInterface.OnCancelListener() {
-                        @Override
-                        public void onCancel(DialogInterface dialog) {
-                            dialog.cancel();
-                            zoomDialog.dismiss();
-                        }
+                    .setNegativeButton(R.string.cancel, (dialog, id) -> dialog.cancel())
+                    .setOnCancelListener(dialog -> {
+                        dialog.cancel();
+                        zoomDialog.dismiss();
                     });
             zoomDialog = builder.create();
         }
@@ -496,7 +467,7 @@ public class GeoPointMapActivity extends FragmentActivity implements OnMarkerDra
             if (location != null) {
                 zoomLocationButton.setEnabled(true);
                 zoomLocationButton.setBackgroundColor(Color.parseColor("#50cccccc"));
-                zoomLocationButton.setTextColor(Color.parseColor("#ff333333"));
+                zoomLocationButton.setTextColor(themeUtils.getPrimaryTextColor());
             } else {
                 zoomLocationButton.setEnabled(false);
                 zoomLocationButton.setBackgroundColor(Color.parseColor("#50e2e2e2"));
@@ -506,7 +477,7 @@ public class GeoPointMapActivity extends FragmentActivity implements OnMarkerDra
             if (latLng != null & !setClear) {
                 zoomPointButton.setEnabled(true);
                 zoomPointButton.setBackgroundColor(Color.parseColor("#50cccccc"));
-                zoomPointButton.setTextColor(Color.parseColor("#ff333333"));
+                zoomPointButton.setTextColor(themeUtils.getPrimaryTextColor());
             } else {
                 zoomPointButton.setEnabled(false);
                 zoomPointButton.setBackgroundColor(Color.parseColor("#50e2e2e2"));
@@ -523,20 +494,16 @@ public class GeoPointMapActivity extends FragmentActivity implements OnMarkerDra
         alertDialogBuilder.setMessage(getString(R.string.gps_enable_message))
                 .setCancelable(false)
                 .setPositiveButton(getString(R.string.enable_gps),
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                startActivityForResult(
-                                        new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS), 0);
-                                errorDialog = null;
-                            }
+                        (dialog, id) -> {
+                            startActivityForResult(
+                                    new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS), 0);
+                            errorDialog = null;
                         });
 
         alertDialogBuilder.setNegativeButton(getString(R.string.cancel),
-                new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                        errorDialog = null;
-                    }
+                (dialog, id) -> {
+                    dialog.cancel();
+                    errorDialog = null;
                 });
 
         errorDialog = alertDialogBuilder.create();
@@ -581,7 +548,7 @@ public class GeoPointMapActivity extends FragmentActivity implements OnMarkerDra
     }
 
     public String getAccuracyStringForLocation(Location location) {
-        return getString(R.string.location_provider_accuracy, location.getProvider(),
+        return getString(R.string.location_provider_accuracy, GeoPointUtils.capitalizeGps(location.getProvider()),
                 truncateFloat(location.getAccuracy()));
     }
 

@@ -32,12 +32,11 @@ import timber.log.Timber;
  */
 public class DeleteInstancesTask extends AsyncTask<Long, Integer, Integer> {
 
-
     private ContentResolver contentResolver;
     private DeleteInstancesListener deleteInstancesListener;
 
-    private int successCount = 0;
-    private int toDeleteCount = 0;
+    private int successCount;
+    private int toDeleteCount;
 
     @Override
     protected Integer doInBackground(Long... params) {
@@ -48,7 +47,6 @@ public class DeleteInstancesTask extends AsyncTask<Long, Integer, Integer> {
         }
 
         toDeleteCount = params.length;
-
 
         // delete files from database and then from file system
         for (Long param : params) {
@@ -106,7 +104,6 @@ public class DeleteInstancesTask extends AsyncTask<Long, Integer, Integer> {
     public void setDeleteListener(DeleteInstancesListener listener) {
         deleteInstancesListener = listener;
     }
-
 
     public void setContentResolver(ContentResolver resolver) {
         contentResolver = resolver;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 University of Washington
+ * Copyright (C) 2018 Shobhit Agarwal
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -24,7 +24,6 @@ import android.net.Uri;
 import android.provider.MediaStore.Audio;
 import android.support.annotation.NonNull;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -33,16 +32,21 @@ import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.StringData;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
+import org.odk.collect.android.activities.FormEntryActivity;
 import org.odk.collect.android.application.Collect;
+import org.odk.collect.android.listeners.PermissionListener;
 import org.odk.collect.android.utilities.FileUtil;
+import org.odk.collect.android.utilities.MediaManager;
 import org.odk.collect.android.utilities.MediaUtil;
 import org.odk.collect.android.widgets.interfaces.FileWidget;
 
 import java.io.File;
+import java.util.Locale;
 
 import timber.log.Timber;
 
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
+import static org.odk.collect.android.utilities.PermissionUtils.requestRecordAudioPermission;
 
 /**
  * Widget that allows user to take pictures, sounds or video and add them to the
@@ -61,21 +65,22 @@ public class AudioWidget extends QuestionWidget implements FileWidget {
     @NonNull
     private MediaUtil mediaUtil;
 
+    private AudioController audioController;
     private Button captureButton;
-    private Button playButton;
     private Button chooseButton;
 
     private String binaryName;
 
     public AudioWidget(Context context, FormEntryPrompt prompt) {
-        this(context, prompt, new FileUtil(), new MediaUtil());
+        this(context, prompt, new FileUtil(), new MediaUtil(), new AudioController());
     }
 
-    AudioWidget(Context context, FormEntryPrompt prompt, @NonNull FileUtil fileUtil, @NonNull MediaUtil mediaUtil) {
+    AudioWidget(Context context, FormEntryPrompt prompt, @NonNull FileUtil fileUtil, @NonNull MediaUtil mediaUtil, @NonNull AudioController audioController) {
         super(context, prompt);
 
         this.fileUtil = fileUtil;
         this.mediaUtil = mediaUtil;
+        this.audioController = audioController;
 
         captureButton = getSimpleButton(getContext().getString(R.string.capture_audio), R.id.capture_audio);
         captureButton.setEnabled(!prompt.isReadOnly());
@@ -83,41 +88,34 @@ public class AudioWidget extends QuestionWidget implements FileWidget {
         chooseButton = getSimpleButton(getContext().getString(R.string.choose_sound), R.id.choose_sound);
         chooseButton.setEnabled(!prompt.isReadOnly());
 
-        playButton = getSimpleButton(getContext().getString(R.string.play_audio), R.id.play_audio);
-
-        // retrieve answer from data model and update ui
-        binaryName = prompt.getAnswerText();
-        if (binaryName != null) {
-            playButton.setEnabled(true);
-        } else {
-            playButton.setEnabled(false);
-        }
+        audioController.init(context, getPlayer(), getFormEntryPrompt());
 
         // finish complex layout
         LinearLayout answerLayout = new LinearLayout(getContext());
         answerLayout.setOrientation(LinearLayout.VERTICAL);
         answerLayout.addView(captureButton);
         answerLayout.addView(chooseButton);
-        answerLayout.addView(playButton);
+        answerLayout.addView(audioController.getPlayerLayout(answerLayout));
         addAnswerView(answerLayout);
 
-        // and hide the capture and choose button if read-only
-        if (getFormEntryPrompt().isReadOnly()) {
-            captureButton.setVisibility(View.GONE);
-            chooseButton.setVisibility(View.GONE);
+        hideButtonsIfNeeded();
+
+        // retrieve answer from data model and update ui
+        binaryName = prompt.getAnswerText();
+        if (binaryName != null) {
+            audioController.setMedia(getAudioFile());
+        } else {
+            audioController.hidePlayer();
         }
     }
 
     @Override
     public void deleteFile() {
-        // get the file path and delete the file
-        String name = binaryName;
-        // clean up variables
+        MediaManager
+                .INSTANCE
+                .markOriginalFileOrDelete(getFormEntryPrompt().getIndex().toString(),
+                        getInstanceFolder() + File.separator + binaryName);
         binaryName = null;
-        // delete from media provider
-        int del = mediaUtil.deleteAudioFileFromMediaProvider(
-                getInstanceFolder() + File.separator + name);
-        Timber.i("Deleted %d rows from media content provider", del);
     }
 
     @Override
@@ -125,9 +123,8 @@ public class AudioWidget extends QuestionWidget implements FileWidget {
         // remove the file
         deleteFile();
 
-
-        // reset buttons
-        playButton.setEnabled(false);
+        // hide audio player
+        audioController.hidePlayer();
     }
 
     @Override
@@ -139,23 +136,39 @@ public class AudioWidget extends QuestionWidget implements FileWidget {
         }
     }
 
+    /**
+     * Set this widget with the actual file returned by OnActivityResult.
+     * Both of Uri and File are supported.
+     * If the file is local, a Uri is enough for the copy task below.
+     * If the chose file is from cloud(such as Google Drive),
+     * The retrieve and copy task is already executed in the previous step,
+     * so a File object would be presented.
+     *
+     * @param object Uri or File of the chosen file.
+     * @see org.odk.collect.android.activities.FormEntryActivity#onActivityResult(int, int, Intent)
+     */
     @Override
-    public void setBinaryData(Object binaryuri) {
-        if (binaryuri == null || !(binaryuri instanceof Uri)) {
-            Timber.w("AudioWidget's setBinaryData must receive a Uri object.");
+    public void setBinaryData(Object object) {
+        File newAudio;
+        // get the file path and create a copy in the instance folder
+        if (object instanceof Uri) {
+            String sourcePath = getSourcePathFromUri((Uri) object);
+            String destinationPath = getDestinationPathFromSourcePath(sourcePath);
+            File source = fileUtil.getFileAtPath(sourcePath);
+            newAudio = fileUtil.getFileAtPath(destinationPath);
+            fileUtil.copyFile(source, newAudio);
+        } else if (object instanceof File) {
+            // Getting a file indicates we've done the copy in the before step
+            newAudio = (File) object;
+        } else {
+            Timber.w("AudioWidget's setBinaryData must receive a File or Uri object.");
             return;
         }
 
-        Uri uri = (Uri) binaryuri;
-
-        // get the file path and create a copy in the instance folder
-        String sourcePath = getSourcePathFromUri(uri);
-        String destinationPath = getDestinationPathFromSourcePath(sourcePath);
-
-        File source = fileUtil.getFileAtPath(sourcePath);
-        File newAudio = fileUtil.getFileAtPath(destinationPath);
-
-        fileUtil.copyFile(source, newAudio);
+        if (newAudio == null) {
+            Timber.e("setBinaryData FAILED");
+            return;
+        }
 
         if (newAudio.exists()) {
             // Add the copy to the content provier
@@ -164,6 +177,10 @@ public class AudioWidget extends QuestionWidget implements FileWidget {
             values.put(Audio.Media.DISPLAY_NAME, newAudio.getName());
             values.put(Audio.Media.DATE_ADDED, System.currentTimeMillis());
             values.put(Audio.Media.DATA, newAudio.getAbsolutePath());
+
+            MediaManager
+                    .INSTANCE
+                    .replaceRecentFileForQuestion(getFormEntryPrompt().getIndex().toString(), newAudio.getAbsolutePath());
 
             Uri audioURI = getContext().getContentResolver().insert(
                     Audio.Media.EXTERNAL_CONTENT_URI, values);
@@ -184,6 +201,16 @@ public class AudioWidget extends QuestionWidget implements FileWidget {
         }
     }
 
+    private void hideButtonsIfNeeded() {
+        if (getFormEntryPrompt().isReadOnly()) {
+            captureButton.setVisibility(View.GONE);
+            chooseButton.setVisibility(View.GONE);
+        } else if (getFormEntryPrompt().getAppearanceHint() != null
+                && getFormEntryPrompt().getAppearanceHint().toLowerCase(Locale.ENGLISH).contains("new")) {
+            chooseButton.setVisibility(View.GONE);
+        }
+    }
+
     private String getSourcePathFromUri(@NonNull Uri uri) {
         return mediaUtil.getPathFromUri(getContext(), uri, Audio.Media.DATA);
     }
@@ -195,18 +222,9 @@ public class AudioWidget extends QuestionWidget implements FileWidget {
     }
 
     @Override
-    public void setFocus(Context context) {
-        // Hide the soft keyboard if it's showing.
-        InputMethodManager inputManager = (InputMethodManager) context
-                .getSystemService(Context.INPUT_METHOD_SERVICE);
-        inputManager.hideSoftInputFromWindow(this.getWindowToken(), 0);
-    }
-
-    @Override
     public void setOnLongClickListener(OnLongClickListener l) {
         captureButton.setOnLongClickListener(l);
         chooseButton.setOnLongClickListener(l);
-        playButton.setOnLongClickListener(l);
     }
 
     @Override
@@ -214,20 +232,25 @@ public class AudioWidget extends QuestionWidget implements FileWidget {
         super.cancelLongPress();
         captureButton.cancelLongPress();
         chooseButton.cancelLongPress();
-        playButton.cancelLongPress();
     }
 
     @Override
     public void onButtonClick(int buttonId) {
         switch (buttonId) {
             case R.id.capture_audio:
-                captureAudio();
+                requestRecordAudioPermission((FormEntryActivity) getContext(), new PermissionListener() {
+                    @Override
+                    public void granted() {
+                        captureAudio();
+                    }
+
+                    @Override
+                    public void denied() {
+                    }
+                });
                 break;
             case R.id.choose_sound:
                 chooseSound();
-                break;
-            case R.id.play_audio:
-                playAudioFile();
                 break;
         }
     }
@@ -251,7 +274,7 @@ public class AudioWidget extends QuestionWidget implements FileWidget {
             Toast.makeText(
                     getContext(),
                     getContext().getString(R.string.activity_not_found,
-                            "audio capture"), Toast.LENGTH_SHORT)
+                            getContext().getString(R.string.capture_audio)), Toast.LENGTH_SHORT)
                     .show();
             cancelWaitingForData();
         }
@@ -272,27 +295,15 @@ public class AudioWidget extends QuestionWidget implements FileWidget {
             Toast.makeText(
                     getContext(),
                     getContext().getString(R.string.activity_not_found,
-                            "choose audio"), Toast.LENGTH_SHORT).show();
+                            getContext().getString(R.string.choose_audio)), Toast.LENGTH_SHORT).show();
             cancelWaitingForData();
         }
     }
 
-    private void playAudioFile() {
-        Collect.getInstance()
-                .getActivityLogger()
-                .logInstanceAction(this, "playButton", "click",
-                        getFormEntryPrompt().getIndex());
-        Intent i = new Intent("android.intent.action.VIEW");
-        File f = new File(getInstanceFolder() + File.separator
-                + binaryName);
-        i.setDataAndType(Uri.fromFile(f), "audio/*");
-        try {
-            getContext().startActivity(i);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(
-                    getContext(),
-                    getContext().getString(R.string.activity_not_found,
-                            "play audio"), Toast.LENGTH_SHORT).show();
-        }
+    /**
+     * Returns the audio file added to the widget for the current instance
+     */
+    private File getAudioFile() {
+        return new File(getInstanceFolder() + File.separator + binaryName);
     }
 }

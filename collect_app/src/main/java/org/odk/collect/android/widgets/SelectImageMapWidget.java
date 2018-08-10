@@ -72,7 +72,7 @@ public abstract class SelectImageMapWidget extends SelectWidget {
     private CustomWebView webView;
     private TextView selectedAreasLabel;
 
-    private boolean isSingleSelect;
+    private final boolean isSingleSelect;
     private String imageMapFilePath;
     protected List<Selection> selections = new ArrayList<>();
 
@@ -87,11 +87,12 @@ public abstract class SelectImageMapWidget extends SelectWidget {
             Timber.w(e);
         }
 
-        setUpLayout();
+        createLayout();
     }
 
     @Override
     public void clearAnswer() {
+        selections.clear();
         webView.loadUrl("javascript:clearAreas()");
     }
 
@@ -100,7 +101,9 @@ public abstract class SelectImageMapWidget extends SelectWidget {
         return webView.suppressFlingGesture();
     }
 
-    private void setUpLayout() {
+    private void createLayout() {
+        readItems();
+
         webView = new CustomWebView(getContext());
         selectedAreasLabel = getAnswerTextView();
         answerLayout.addView(webView);
@@ -143,7 +146,7 @@ public abstract class SelectImageMapWidget extends SelectWidget {
         }
     }
 
-    private void selectArea(String areaId) {
+    protected void selectArea(String areaId) {
         SelectChoice selectChoice = null;
         for (SelectChoice sc : items) {
             if (areaId.equalsIgnoreCase(sc.getValue())) {
@@ -212,10 +215,20 @@ public abstract class SelectImageMapWidget extends SelectWidget {
     private void addOnClickAttributes(NodeList nodes) {
         for (int i = 0; i < nodes.getLength(); i++) {
             Node node = nodes.item(i);
-            if (node.getNodeType() == Node.ELEMENT_NODE && node.getAttributes().getNamedItem("id") != null) {
+            Node elementId = node.getAttributes().getNamedItem("id");
+            if (node.getNodeType() == Node.ELEMENT_NODE && elementId != null && doesElementExistInDataSet(elementId.getNodeValue())) {
                 ((Element) node).setAttribute("onClick", "clickOnArea(this.id)");
             }
         }
+    }
+
+    private boolean doesElementExistInDataSet(String elementId) {
+        for (SelectChoice item : items) {
+            if (item.getValue().equals(elementId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void addSizeAttributesIfNeeded(NodeList nodes) {

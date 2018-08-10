@@ -86,14 +86,13 @@ public class ItemsetWidgetTest extends QuestionWidgetTest<ItemsetWidget, StringD
     @Mock
     Cursor cursor;
 
-    private CursorMocker cursorMocker;
     private Map<String, String> choices;
 
     @NonNull
     @Override
     public ItemsetWidget createWidget() {
         return new ItemsetWidget(RuntimeEnvironment.application, formEntryPrompt,
-                false, false, parseTool, adapter, fileUtil);
+                false, parseTool, adapter, fileUtil);
     }
 
     @NonNull
@@ -114,7 +113,7 @@ public class ItemsetWidgetTest extends QuestionWidgetTest<ItemsetWidget, StringD
     public void setUp() throws Exception {
         super.setUp();
         choices = createChoices();
-        cursorMocker = new CursorMocker(choices, cursor);
+        CursorMocker cursorMocker = new CursorMocker(choices, cursor);
 
         when(parseTool.parseXPath(any(String.class))).thenReturn(expression);
 
@@ -139,7 +138,6 @@ public class ItemsetWidgetTest extends QuestionWidgetTest<ItemsetWidget, StringD
         when(nodeset.getValAt(0)).thenReturn("");
 
         when(adapter.query(anyString(), anyString(), any(String[].class))).thenReturn(cursorMocker.getCursor());
-
 
         when(formEntryPrompt.getQuestion()).thenReturn(questionDef);
         when(questionDef.getAdditionalAttribute(null, "query")).thenReturn("instance('cities')/root/item[state=/data/state]");
@@ -172,7 +170,7 @@ public class ItemsetWidgetTest extends QuestionWidgetTest<ItemsetWidget, StringD
 
     public static class CursorMocker {
         private int cursorIndex = -1;
-        private Cursor cursor;
+        private final Cursor cursor;
 
         CursorMocker(final Map<String, String> choices, Cursor cursor) {
             this.cursor = cursor;

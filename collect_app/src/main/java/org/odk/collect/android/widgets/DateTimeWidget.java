@@ -17,7 +17,6 @@ package org.odk.collect.android.widgets;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.Gravity;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
 
 import org.javarosa.core.model.data.DateTimeData;
@@ -58,10 +57,10 @@ public class DateTimeWidget extends QuestionWidget implements BinaryWidget {
         timeWidget = new TimeWidget(context, prompt);
 
         dateWidget.getQuestionMediaLayout().getView_Text().setVisibility(GONE);
-        dateWidget.getHelpTextView().setVisibility(GONE);
+        dateWidget.getHelpTextLayout().setVisibility(GONE);
 
         timeWidget.getQuestionMediaLayout().getView_Text().setVisibility(GONE);
-        timeWidget.getHelpTextView().setVisibility(GONE);
+        timeWidget.getHelpTextLayout().setVisibility(GONE);
 
         LinearLayout linearLayout = new LinearLayout(getContext());
         linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -76,7 +75,7 @@ public class DateTimeWidget extends QuestionWidget implements BinaryWidget {
     public IAnswerData getAnswer() {
         clearFocus();
 
-        if (dateWidget.isNullAnswer() && timeWidget.isNullAnswer()) {
+        if (isNullAnswer()) {
             return null;
         } else {
             if (timeWidget.isNullAnswer()) {
@@ -113,14 +112,6 @@ public class DateTimeWidget extends QuestionWidget implements BinaryWidget {
     }
 
     @Override
-    public void setFocus(Context context) {
-        // Hide the soft keyboard if it's showing.
-        InputMethodManager inputManager =
-                (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-        inputManager.hideSoftInputFromWindow(this.getWindowToken(), 0);
-    }
-
-    @Override
     public void setOnLongClickListener(OnLongClickListener l) {
         dateWidget.setOnLongClickListener(l);
         timeWidget.setOnLongClickListener(l);
@@ -154,5 +145,11 @@ public class DateTimeWidget extends QuestionWidget implements BinaryWidget {
 
     @Override
     public void onButtonClick(int buttonId) {
+    }
+
+    private boolean isNullAnswer() {
+        return getFormEntryPrompt().isRequired()
+                ? dateWidget.isNullAnswer() || timeWidget.isNullAnswer()
+                : dateWidget.isNullAnswer() && timeWidget.isNullAnswer();
     }
 }

@@ -1,20 +1,30 @@
 package org.odk.collect.android;
 
+import android.Manifest;
 import android.app.Instrumentation.ActivityResult;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Environment;
-// import android.support.annotation.Nullable;
 import android.support.test.InstrumentationRegistry;
+import android.support.test.espresso.UiController;
+import android.support.test.espresso.ViewAction;
 import android.support.test.espresso.ViewInteraction;
 import android.support.test.espresso.intent.rule.IntentsTestRule;
+import android.support.test.espresso.matcher.BoundedMatcher;
+import android.support.test.espresso.matcher.ViewMatchers;
+import android.support.test.rule.GrantPermissionRule;
 import android.support.test.runner.AndroidJUnit4;
+import android.view.View;
+import android.widget.NumberPicker;
+import android.widget.SeekBar;
 
 import net.bytebuddy.utility.RandomString;
 
 import org.apache.commons.io.IOUtils;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -24,7 +34,6 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
-// import org.odk.collect.android.activities.BearingActivity;
 import org.odk.collect.android.activities.FormEntryActivity;
 import org.odk.collect.android.utilities.ActivityAvailability;
 
@@ -42,7 +51,6 @@ import tools.fastlane.screengrab.Screengrab;
 import tools.fastlane.screengrab.UiAutomatorScreenshotStrategy;
 import tools.fastlane.screengrab.locale.LocaleTestRule;
 
-// import static android.app.Activity.RESULT_CANCELED;
 import static android.app.Activity.RESULT_OK;
 import static android.support.test.espresso.Espresso.onView;
 import static android.support.test.espresso.action.ViewActions.click;
@@ -52,11 +60,12 @@ import static android.support.test.espresso.assertion.ViewAssertions.matches;
 import static android.support.test.espresso.intent.Intents.intended;
 import static android.support.test.espresso.intent.Intents.intending;
 import static android.support.test.espresso.intent.matcher.IntentMatchers.hasAction;
-//import static android.support.test.espresso.intent.matcher.IntentMatchers.hasComponent;
 import static android.support.test.espresso.intent.matcher.IntentMatchers.hasData;
 import static android.support.test.espresso.intent.matcher.IntentMatchers.hasExtra;
 import static android.support.test.espresso.matcher.ViewMatchers.Visibility.VISIBLE;
+import static android.support.test.espresso.matcher.ViewMatchers.isChecked;
 import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static android.support.test.espresso.matcher.ViewMatchers.isNotChecked;
 import static android.support.test.espresso.matcher.ViewMatchers.withClassName;
 import static android.support.test.espresso.matcher.ViewMatchers.withEffectiveVisibility;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
@@ -66,8 +75,13 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-//import static org.odk.collect.android.activities.FormEntryActivity.BEARING_RESULT;
 import static org.odk.collect.android.activities.FormEntryActivity.EXTRA_TESTING_PATH;
+
+// import android.support.annotation.Nullable;
+// import org.odk.collect.android.activities.BearingActivity;
+// import static android.app.Activity.RESULT_CANCELED;
+//import static android.support.test.espresso.intent.matcher.IntentMatchers.hasComponent;
+//import static org.odk.collect.android.activities.FormEntryActivity.BEARING_RESULT;
 
 /**
  * Integration test that runs through a form with all question types.
@@ -80,20 +94,23 @@ import static org.odk.collect.android.activities.FormEntryActivity.EXTRA_TESTING
 @RunWith(AndroidJUnit4.class)
 public class AllWidgetsFormTest {
 
-    private static final String ALL_WIDGETS_FORM = "all_widgets.xml";
+    private static final String ALL_WIDGETS_FORM = "all-widgets.xml";
     private static final String FORMS_DIRECTORY = "/odk/forms/";
 
     private final Random random = new Random();
-    private ActivityResult okResult = new ActivityResult(RESULT_OK, new Intent());
+    private final ActivityResult okResult = new ActivityResult(RESULT_OK, new Intent());
 
     @ClassRule
-    public static final LocaleTestRule localeTestRule = new LocaleTestRule();
+    public static final LocaleTestRule LOCALE_TEST_RULE = new LocaleTestRule();
 
     @Rule
     public FormEntryActivityTestRule activityTestRule = new FormEntryActivityTestRule();
 
     @Rule
     public MockitoRule rule = MockitoJUnit.rule();
+
+    @Rule
+    public GrantPermissionRule permissionRule = GrantPermissionRule.grant(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
     @Mock
     private ActivityAvailability activityAvailability;
@@ -152,12 +169,12 @@ public class AllWidgetsFormTest {
         testBearingWidget();
 
         testRangeIntegerWidget();
-        testRangeVerticalAppearance();
         testRangeDecimalWidget();
-        testRangeDecimalVertical();
-
+        testRangeVerticalAppearance();
+        testRangePickerIntegerWidget();
 
         testImageWidget();
+        testImageWithoutChooseWidget();
         testSelfieWidget();
 
         testDrawWidget();
@@ -171,6 +188,9 @@ public class AllWidgetsFormTest {
 
         testAudioWidget();
         testVideoWidget();
+        testSelfieVideoWidget();
+
+        testFileWidget();
 
         testDateNoAppearanceWidget();
         testDateNoCalendarAppearance();
@@ -210,6 +230,8 @@ public class AllWidgetsFormTest {
         testGridSelectQuickCompactAppearance();
         testGridSelectQuickCompact2Appearance();
 
+        testImageSelectOne();
+
         testMultiSelectWidget();
 
         testGridSelectMultipleCompact();
@@ -217,9 +239,13 @@ public class AllWidgetsFormTest {
 
         testSpinnerSelectMultiple();
 
+        testImageSelectMultiple();
+
         testLabelWidget();
 
-        testTriggerWidget();
+        testTriggerWidget(false);
+
+        testTriggerWidget(true);
     }
     //endregion
 
@@ -227,7 +253,7 @@ public class AllWidgetsFormTest {
 
     public void skipInitialLabel() {
 
-        onView(withText(startsWith("This form"))).perform(swipeLeft());
+        onView(withText(startsWith("Welcome to ODK Collect!"))).perform(swipeLeft());
 
     }
 
@@ -246,7 +272,6 @@ public class AllWidgetsFormTest {
 
         onView(withText("String widget")).perform(swipeLeft());
     }
-
 
     public void testStringNumberWidget() {
         String stringNumberWidgetText = randomIntegerString();
@@ -511,32 +536,70 @@ public class AllWidgetsFormTest {
 
     public void testRangeIntegerWidget() {
 
-         Screengrab.screenshot("range-integer");
+        int randomValue = randomInt() % 9;
+        onVisibleSeekBar().perform(setProgress(randomValue));
 
-         onView(withText("Range integer widget")).perform(swipeLeft());
+        Screengrab.screenshot("range-integer");
+
+        openWidgetList();
+        onView(withText("Range integer widget")).perform(click());
+
+        onVisibleSeekBar().check(matches(withProgress(randomValue)));
+
+        onView(withText("Range integer widget")).perform(swipeLeft());
 
     }
 
     public void testRangeVerticalAppearance() {
 
-         Screengrab.screenshot("range-integer-vertical");
+        int randomValue = randomInt() % 9;
+        onVisibleSeekBar().perform(setProgress(randomValue));
 
-         onView(withText("Range integer widget")).perform(swipeLeft());
+        Screengrab.screenshot("range-integer-vertical");
+
+        openWidgetList();
+        onView(withText("Range vertical integer widget")).perform(click());
+
+        onVisibleSeekBar().check(matches(withProgress(randomValue)));
+
+        onView(withText("Range vertical integer widget")).perform(swipeLeft());
 
     }
 
     public void testRangeDecimalWidget() {
 
-          Screengrab.screenshot("range-decimal");
+        int randomValue = randomInt() % 8;
+        onVisibleSeekBar().perform(setProgress(randomValue));
 
-          onView(withText("Range decimal widget")).perform(swipeLeft());
+        Screengrab.screenshot("range-decimal");
+
+        openWidgetList();
+        onView(withText("Range decimal widget")).perform(click());
+
+        onVisibleSeekBar().check(matches(withProgress(randomValue)));
+
+        onView(withText("Range decimal widget")).perform(swipeLeft());
+
     }
 
-    public void testRangeDecimalVertical() {
+    public void testRangePickerIntegerWidget() {
 
-          Screengrab.screenshot("range-decimal-vertical");
+        int randomValue = randomInt() % 8;
+        onView(withText("Select value")).perform(click());
 
-          onView(withText("Range decimal widget")).perform(swipeLeft());
+        onVisibleNumberPickerDialog().perform(setNumberPickerValue(randomValue));
+        onView(withText("OK")).perform(click());
+
+        Screengrab.screenshot("Range-picker-integer-widget");
+
+        openWidgetList();
+        onView(withText("Range picker integer widget")).perform(click());
+
+        onView(withText("Edit value")).perform(click());
+        onVisibleCustomEditText().check(matches(isDisplayed()));
+        onView(withText("OK")).perform(click());
+
+        onView(withText("Range picker integer widget")).perform(swipeLeft());
 
     }
 
@@ -547,11 +610,20 @@ public class AllWidgetsFormTest {
         onView(withText("Image widget")).perform(swipeLeft());
     }
 
+    public void testImageWithoutChooseWidget() {
+
+        Screengrab.screenshot("image-without-choose-widget");
+
+        onView(withText("Image widget without Choose button")).perform(swipeLeft());
+
+    }
+
     public void testSelfieWidget() {
 
         Screengrab.screenshot("selfie-widget");
 
         onView(withText("Selfie widget")).perform(swipeLeft());
+
     }
 
     public void testDrawWidget() {
@@ -608,6 +680,22 @@ public class AllWidgetsFormTest {
         Screengrab.screenshot("video");
 
         onView(withText("Video widget")).perform(swipeLeft());
+    }
+
+    public void testSelfieVideoWidget() {
+
+        Screengrab.screenshot("selfie-video");
+
+        onView(withText("Selfie video widget")).perform(swipeLeft());
+
+    }
+
+    public void testFileWidget() {
+
+        Screengrab.screenshot("file-widget");
+
+        onView(withText("File widget")).perform(swipeLeft());
+
     }
 
     public void testDateNoAppearanceWidget() {
@@ -804,6 +892,13 @@ public class AllWidgetsFormTest {
         onView(withText("Grid select one widget")).perform(swipeLeft());
     }
 
+    public void testImageSelectOne() {
+
+        Screengrab.screenshot("image-select1");
+
+        onView(withText("Image select one widget")).perform(swipeLeft());
+    }
+
     public void testMultiSelectWidget() {
 
         Screengrab.screenshot("multi-select");
@@ -832,6 +927,13 @@ public class AllWidgetsFormTest {
         onView(withText("Spinner widget: select multiple")).perform(swipeLeft());
     }
 
+    public void testImageSelectMultiple() {
+
+        Screengrab.screenshot("image-select-multiple");
+
+        onView(withText("Image select multiple widget")).perform(swipeLeft());
+    }
+
     public void testLabelWidget() {
 
         Screengrab.screenshot("label-widget");
@@ -839,11 +941,23 @@ public class AllWidgetsFormTest {
         onView(withText("Label widget")).perform(swipeLeft());
     }
 
-    public void testTriggerWidget() {
+    public void testTriggerWidget(boolean check) {
 
+        if (check) {
+            onVisibleCheckBox().perform(click());
+        }
+
+        // captures screenshot of trigger widget
         Screengrab.screenshot("trigger-widget");
 
-        onView(withText("Trigger widget")).perform(swipeLeft());
+        openWidgetList();
+        onView(withText("Trigger widget")).perform(click());
+
+        onVisibleCheckBox().check(matches(check ? isChecked() : isNotChecked()));
+
+        if (check) {
+            onView(withText("Trigger widget")).perform(swipeLeft());
+        }
     }
 
     public void testSubmission() {
@@ -858,8 +972,79 @@ public class AllWidgetsFormTest {
                 + ALL_WIDGETS_FORM;
     }
 
+    public static Matcher<View> withProgress(final int expectedProgress) {
+        return new BoundedMatcher<View, SeekBar>(SeekBar.class) {
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("expected: ");
+                description.appendText(String.valueOf(expectedProgress));
+            }
+
+            @Override
+            public boolean matchesSafely(SeekBar seekBar) {
+                return seekBar.getProgress() == expectedProgress;
+            }
+        };
+    }
+
+    public static ViewAction setProgress(final int progress) {
+        return new ViewAction() {
+            @Override
+            public void perform(UiController uiController, View view) {
+                SeekBar seekBar = (SeekBar) view;
+                seekBar.setProgress(progress);
+            }
+
+            @Override
+            public String getDescription() {
+                return "Set a progress on a SeekBar";
+            }
+
+            @Override
+            public Matcher<View> getConstraints() {
+                return ViewMatchers.isAssignableFrom(SeekBar.class);
+            }
+        };
+    }
+
+    public static ViewAction setNumberPickerValue(final int value) {
+        return new ViewAction() {
+            @Override
+            public void perform(UiController uiController, View view) {
+                NumberPicker numberPickerDialog = (NumberPicker) view;
+                numberPickerDialog.setValue(value);
+            }
+
+            @Override
+            public String getDescription() {
+                return "Set a value on a Number Picker";
+            }
+
+            @Override
+            public Matcher<View> getConstraints() {
+                return ViewMatchers.isAssignableFrom(NumberPicker.class);
+            }
+        };
+    }
+
+    private ViewInteraction onVisibleSeekBar() {
+        return onView(withId(R.id.seek_bar));
+    }
+
     private ViewInteraction onVisibleEditText() {
         return onView(withClassName(endsWith("EditText")));
+    }
+
+    private ViewInteraction onVisibleCustomEditText() {
+        return onView(withClassName(endsWith("CustomEditText")));
+    }
+
+    private ViewInteraction onVisibleCheckBox() {
+        return onView(withClassName(endsWith("CheckBox")));
+    }
+
+    private ViewInteraction onVisibleNumberPickerDialog() {
+        return onView(withClassName(endsWith("NumberPicker")));
     }
 
     // private void openWidget(String name) {

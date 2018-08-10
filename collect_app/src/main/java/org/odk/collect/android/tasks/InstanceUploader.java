@@ -49,11 +49,11 @@ public abstract class InstanceUploader extends AsyncTask<Long, Integer, Instance
         synchronized (this) {
             if (outcome != null && stateListener != null) {
                 if (outcome.authRequestingServer != null) {
-                    stateListener.authRequest(outcome.authRequestingServer, outcome.results);
+                    stateListener.authRequest(outcome.authRequestingServer, outcome.messagesByInstanceId);
                 } else {
-                    stateListener.uploadingComplete(outcome.results);
+                    stateListener.uploadingComplete(outcome.messagesByInstanceId);
 
-                    Set<String> keys = outcome.results.keySet();
+                    Set<String> keys = outcome.messagesByInstanceId.keySet();
                     Iterator<String> it = keys.iterator();
                     int count = keys.size();
                     while (count > 0) {
@@ -72,10 +72,10 @@ public abstract class InstanceUploader extends AsyncTask<Long, Integer, Instance
 
                         while (it.hasNext() && i < selectionArgs.length - 1) {
                             selectionArgs[i] = it.next();
-                            selection.append("?");
+                            selection.append('?');
 
                             if (i != selectionArgs.length - 2) {
-                                selection.append(",");
+                                selection.append(',');
                             }
                             i++;
                         }
@@ -89,7 +89,7 @@ public abstract class InstanceUploader extends AsyncTask<Long, Integer, Instance
                             results =
                                     new InstancesDao().getInstancesCursor(selection.toString(),
                                             selectionArgs);
-                            if (results.getCount() > 0) {
+                            if (results != null && results.getCount() > 0) {
                                 List<Long> toDelete = new ArrayList<>();
                                 results.moveToPosition(-1);
 
@@ -121,10 +121,10 @@ public abstract class InstanceUploader extends AsyncTask<Long, Integer, Instance
 
     /**
      * @param isFormAutoDeleteOptionEnabled represents whether the auto-delete option is enabled at the app level
-     *
-     * If the form explicitly sets the auto-delete property, then it overrides the preferences.
+     *                                      <p>
+     *                                      If the form explicitly sets the auto-delete property, then it overrides the preferences.
      */
-    private boolean isFormAutoDeleteEnabled(String jrFormId, boolean isFormAutoDeleteOptionEnabled) {
+    public static boolean isFormAutoDeleteEnabled(String jrFormId, boolean isFormAutoDeleteOptionEnabled) {
         Cursor cursor = new FormsDao().getFormsCursorForFormId(jrFormId);
         String autoDelete = null;
         if (cursor != null && cursor.moveToFirst()) {
@@ -153,8 +153,8 @@ public abstract class InstanceUploader extends AsyncTask<Long, Integer, Instance
         }
     }
 
-    public static class Outcome {
-        Uri authRequestingServer = null;
-        public HashMap<String, String> results = new HashMap<String, String>();
+    static class Outcome {
+        Uri authRequestingServer;
+        HashMap<String, String> messagesByInstanceId = new HashMap<>();
     }
 }

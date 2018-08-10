@@ -22,24 +22,23 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 
 import java.util.Locale;
 
-public class BearingActivity extends AppCompatActivity implements SensorEventListener {
+public class BearingActivity extends CollectAbstractActivity implements SensorEventListener {
     private ProgressDialog bearingDialog;
 
     private SensorManager sensorManager;
     private Sensor accelerometer;
     private Sensor magnetometer;
 
-    private static float[] mAccelerometer = null;
-    private static float[] mGeomagnetic = null;
+    private static float[] mAccelerometer;
+    private static float[] mGeomagnetic;
 
-    private String bearingDecimal = null;
+    private String bearingDecimal;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
