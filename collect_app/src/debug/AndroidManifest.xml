@@ -10,6 +10,16 @@
 
     <application
         android:name=".application.TestCollect"
-        tools:replace="android:name" />
+        tools:replace="android:name" >
+        <service
+            android:name="org.odk.collect.android.syncadapter.SyncService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter"/>
+            </intent-filter>
+            <meta-data android:name="android.content.SyncAdapter"
+                android:resource="@xml/sync_service" />
+        </service>
+    </application>
 
 </manifest>
