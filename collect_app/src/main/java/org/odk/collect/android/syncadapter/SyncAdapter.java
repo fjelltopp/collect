@@ -174,7 +174,7 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
                     String localFormMD5 = "md5:" + c.getString(c.getColumnIndex(
                             FormsProviderAPI.FormsColumns.MD5_HASH));
                     if (!remoteFormMD5.equals(localFormMD5)) {
-                        downloadUrl(new URL(""));
+                        InputStream in = downloadUrl(new URL(currentFormHeader.downloadUrl));
                     }
 
                     ArrayList<String> mediaFiles = getMediaFiles(c.getString(

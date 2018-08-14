@@ -23,6 +23,7 @@ public final class XmlStreamUtils {
     private static final String FORM_ID_TAG = "formID";
     private static final String FORM_NAME_TAG = "name";
     private static final String FORM_MD5_TAG = "hash";
+    private static final String FORM_DOWNLOAD_TAG = "downloadUrl";
     private static final String MANIFEST_TAG = "manifest";
     private static final String MANIFEST_MEDIA_FILE_TAG = "mediaFile";
     private static final String MEDIA_FILE_NAME_TAG = "filename";
@@ -33,12 +34,14 @@ public final class XmlStreamUtils {
         public final String formId;
         public final String name;
         public final String hash;
+        public final String downloadUrl;
         public final ArrayList mediaFiles;
 
-        private XFormHeader(String formId, String name, String hash, ArrayList mediaFiles) {
+        private XFormHeader(String formId, String name, String hash, String downloadUrl, ArrayList mediaFiles) {
             this.formId = formId;
             this.name = name;
             this.hash = hash;
+            this.downloadUrl = downloadUrl;
             this.mediaFiles = mediaFiles;
         }
     }
@@ -93,6 +96,7 @@ public final class XmlStreamUtils {
         String formId = null;
         String formName = null;
         String hash = null;
+        String downloadUrl = null;
         ArrayList mediaFiles = new ArrayList();
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.getEventType() != XmlPullParser.START_TAG) {
@@ -105,11 +109,14 @@ public final class XmlStreamUtils {
                 formName = readFormTag(parser, FORM_NAME_TAG);
             } else if (tagName.equals(FORM_MD5_TAG)) {
                 hash = readFormTag(parser, FORM_MD5_TAG);
-            } else {
+            } else if (tagName.equals(FORM_DOWNLOAD_TAG)) {
+                downloadUrl = readFormTag(parser, FORM_DOWNLOAD_TAG);
+            }
+            else {
                 skip(parser);
             }
         }
-        return new XFormHeader(formId, formName, hash, mediaFiles);
+        return new XFormHeader(formId, formName, hash, downloadUrl, mediaFiles);
     }
 
     // Processes simple text tags in the headers.
