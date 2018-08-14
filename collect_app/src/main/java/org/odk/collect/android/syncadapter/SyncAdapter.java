@@ -19,46 +19,32 @@ package org.odk.collect.android.syncadapter;
 import android.accounts.Account;
 import android.content.AbstractThreadedSyncAdapter;
 import android.content.ContentProviderClient;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SyncResult;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 // import org.odk.collect.android.database.SyncSQLiteContract.SyncFileEntry;
 // import org.odk.collect.android.database.SyncSQLiteOpenHelper;
 // import org.odk.collect.android.gcm.SendDeviceReport;
 import org.odk.collect.android.dao.FormsDao;
-import org.odk.collect.android.preferences.PreferencesActivity;
 import org.odk.collect.android.preferences.PreferenceKeys;
-import org.odk.collect.android.provider.FormsProvider;
 import org.odk.collect.android.provider.FormsProviderAPI;
-import org.odk.collect.android.utilities.FileUtils;
 import org.odk.collect.android.utilities.XmlStreamUtils;
+import org.odk.collect.android.utilities.XmlStreamUtils.XFormHeader;
 import org.xmlpull.v1.XmlPullParserException;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -139,8 +125,6 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 
 
     	if (allowSync || forceSync) {
-			URL location;
-			String location_url;
 			URL aggregate_url;
 	    	Log.i(TAG, "Synchronization started");
 			try {
@@ -174,16 +158,20 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
     private void syncForms(final URL url, boolean forceSync, SyncResult syncResult) throws IOException {
 
         Cursor c = null;
+        List formHeaders;
 
         try {
             c = new FormsDao().getFormsCursor();
 
             if (c.getCount() > 0) {
                 c.moveToPosition(-1);
+                formHeaders = getFormHeaders(url);
                 while (c.moveToNext()) {
-                    String remoteFormMD5 = remoteFormMD5OnAggregate(url, c.getString(
-                            c.getColumnIndex(FormsProviderAPI.FormsColumns.JR_FORM_ID)));
-                    String localFormMD5 = c.getString(c.getColumnIndex(
+                    XFormHeader currentFormHeader = getCurrentFormHeader(
+                            formHeaders,
+                            c.getString(c.getColumnIndex(FormsProviderAPI.FormsColumns.JR_FORM_ID)));
+                    String remoteFormMD5 = currentFormHeader.hash;
+                    String localFormMD5 = "md5:" + c.getString(c.getColumnIndex(
                             FormsProviderAPI.FormsColumns.MD5_HASH));
                     if (!remoteFormMD5.equals(localFormMD5)) {
                         downloadUrl(new URL(""));
@@ -230,29 +218,44 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
         return conn.getInputStream();
     }
 
-	private String remoteFormMD5OnAggregate (URL aggregate_url, String formID) throws IOException {
-        String server_response = "";
-    	String remoteMD5 = "";
-    	String aggregate_url_text = aggregate_url.toString();
-    	List formHeaderList;
+    private List getFormHeaders(URL aggregate_url) throws IOException {
+        String aggregate_url_text = aggregate_url.toString();
+        List<XFormHeader> formHeaderList;
         InputStream inputStream;
         URL url = new URL(aggregate_url_text + "/xformsList");
-    	try {
-			HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-			conn.setReadTimeout(NET_READ_TIMEOUT_MILLIS /* milliseconds */);
-			conn.setConnectTimeout(NET_CONNECT_TIMEOUT_MILLIS /* milliseconds */);
-			conn.setRequestMethod("GET");
+        try {
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setReadTimeout(NET_READ_TIMEOUT_MILLIS /* milliseconds */);
+            conn.setConnectTimeout(NET_CONNECT_TIMEOUT_MILLIS /* milliseconds */);
+            conn.setRequestMethod("GET");
             inputStream = conn.getInputStream();
-            formHeaderList = XmlStreamUtils.readFormHeaders(inputStream, formID);
-		}
-		catch (IOException e) {
-    	    Log.e(TAG, "Could not fetch Aggregate form MD5");
-			//throw new IOException("Could not fetch Aggregate form MD5", e);
-		} catch (XmlPullParserException e) {
+            formHeaderList = XmlStreamUtils.readFormHeaders(inputStream);
+
+            return formHeaderList;
+        }
+        catch (IOException e) {
+            Log.e(TAG, "Could not fetch form headers from Aggregate");
+            //throw new IOException("Could not fetch Aggregate form MD5", e);
+            return null;
+        } catch (XmlPullParserException e) {
             throw new IOException("Broken form manifest in Aggregate", e);
         }
-        return "";
-	}
+    }
+
+    private XFormHeader getCurrentFormHeader(List<XFormHeader> formHeaderList, String formID) {
+        try {
+            for (XFormHeader header : formHeaderList) {
+                if (header.formId.equals(formID)) {
+                    return header;
+                }
+            }
+            Log.w(TAG, "No remote header found for form " + formID);
+            return null;
+        } catch (Exception e) {
+            Log.e(TAG, "Unexpected form header structure: " + e.getMessage());
+            return null;
+        }
+}
 
     private String remoteMediaFileMD5OnAggregate (String formID) throws IOException {
         String server_response = "";

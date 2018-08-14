@@ -55,7 +55,8 @@ public final class XmlStreamUtils {
         }
     }
 
-    public static List readFormHeaders(InputStream in, String formID) throws XmlPullParserException, IOException {
+    public static List<XmlStreamUtils.XFormHeader> readFormHeaders(InputStream in)
+            throws XmlPullParserException, IOException {
         try {
             XmlPullParser parser = Xml.newPullParser();
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
