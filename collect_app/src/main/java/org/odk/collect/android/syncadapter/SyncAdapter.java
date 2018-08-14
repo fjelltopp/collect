@@ -32,8 +32,12 @@ import org.odk.collect.android.application.Collect;
 // import org.odk.collect.android.database.SyncSQLiteOpenHelper;
 // import org.odk.collect.android.gcm.SendDeviceReport;
 import org.odk.collect.android.dao.FormsDao;
+import org.odk.collect.android.logic.FormDetails;
 import org.odk.collect.android.preferences.PreferenceKeys;
 import org.odk.collect.android.provider.FormsProviderAPI;
+import org.odk.collect.android.tasks.DownloadFormListTask;
+import org.odk.collect.android.tasks.DownloadFormsTask;
+import org.odk.collect.android.utilities.DownloadFormListUtils;
 import org.odk.collect.android.utilities.XmlStreamUtils;
 import org.odk.collect.android.utilities.XmlStreamUtils.XFormHeader;
 import org.xmlpull.v1.XmlPullParserException;
@@ -45,11 +49,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import javax.net.ssl.HttpsURLConnection;
+
+import static org.odk.collect.android.utilities.DownloadFormListUtils.downloadFormList;
 
 /**
  * Define a sync adapter for the app.
@@ -159,22 +166,27 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 
         Cursor c = null;
         List formHeaders;
+        ArrayList<FormDetails> formsToDownload = new ArrayList<FormDetails>();
 
         try {
             c = new FormsDao().getFormsCursor();
 
             if (c.getCount() > 0) {
                 c.moveToPosition(-1);
+                HashMap<String, FormDetails> formDetailsHashMap =
+                        DownloadFormListUtils.downloadFormList(true);
                 formHeaders = getFormHeaders(url);
                 while (c.moveToNext()) {
-                    XFormHeader currentFormHeader = getCurrentFormHeader(
-                            formHeaders,
-                            c.getString(c.getColumnIndex(FormsProviderAPI.FormsColumns.JR_FORM_ID)));
-                    String remoteFormMD5 = currentFormHeader.hash;
+                    String currentFormId = c.getString(c.getColumnIndex(FormsProviderAPI.FormsColumns.JR_FORM_ID));
+                    //XFormHeader currentFormHeader = getCurrentFormHeader(
+                     //       formHeaders,
+                    //        c.getString(c.getColumnIndex(FormsProviderAPI.FormsColumns.JR_FORM_ID)));
+                    //String remoteFormMD5 = currentFormHeader.hash;
+                    String remoteFormMD5 = formDetailsHashMap.get(currentFormId).getHash();
                     String localFormMD5 = "md5:" + c.getString(c.getColumnIndex(
                             FormsProviderAPI.FormsColumns.MD5_HASH));
                     if (!remoteFormMD5.equals(localFormMD5)) {
-                        InputStream in = downloadUrl(new URL(currentFormHeader.downloadUrl));
+                        formsToDownload.add(formDetailsHashMap.get(currentFormId));
                     }
 
                     ArrayList<String> mediaFiles = getMediaFiles(c.getString(
@@ -188,6 +200,8 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 
                     }
                 }
+                DownloadFormsTask downloadFormsTask = new DownloadFormsTask();
+                downloadFormsTask.execute(formsToDownload);
             }
         } catch (Exception e) {
             Log.e(TAG,e.getMessage());
