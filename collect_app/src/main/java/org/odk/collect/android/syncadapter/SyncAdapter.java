@@ -175,7 +175,6 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
                 c.moveToPosition(-1);
                 HashMap<String, FormDetails> formDetailsHashMap =
                         DownloadFormListUtils.downloadFormList(true);
-                formHeaders = getFormHeaders(url);
                 while (c.moveToNext()) {
                     String currentFormId = c.getString(c.getColumnIndex(FormsProviderAPI.FormsColumns.JR_FORM_ID));
                     //XFormHeader currentFormHeader = getCurrentFormHeader(
@@ -185,7 +184,8 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
                     String remoteFormMD5 = formDetailsHashMap.get(currentFormId).getHash();
                     String localFormMD5 = "md5:" + c.getString(c.getColumnIndex(
                             FormsProviderAPI.FormsColumns.MD5_HASH));
-                    if (!remoteFormMD5.equals(localFormMD5)) {
+                    if (formDetailsHashMap.get(currentFormId).isNewerFormVersionAvailable()
+                            || formDetailsHashMap.get(currentFormId).areNewerMediaFilesAvailable()) {
                         formsToDownload.add(formDetailsHashMap.get(currentFormId));
                     }
 
