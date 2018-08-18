@@ -31,6 +31,7 @@ import android.view.Window;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import org.odk.collect.android.BuildConfig;
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.listeners.PermissionListener;
@@ -114,6 +115,11 @@ public class SplashScreenActivity extends Activity {
             editor.putLong(PreferenceKeys.KEY_LAST_VERSION, packageInfo.versionCode);
             editor.apply();
 
+            firstRun = true;
+        }
+
+        // if running on Debug mode, set firstRun to true
+        if (BuildConfig.DEBUG) {
             firstRun = true;
         }
 
