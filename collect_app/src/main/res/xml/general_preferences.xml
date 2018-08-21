@@ -26,4 +26,8 @@ limitations under the License.
         android:icon="@drawable/ic_face"
         android:key="user_and_device_identity"
         android:title="@string/user_and_device_identity_title" />
+    <Preference
+        android:icon="@drawable/ic_face"
+        android:key="synchronization"
+        android:title="@string/sync_preferences" />
 </PreferenceScreen>
