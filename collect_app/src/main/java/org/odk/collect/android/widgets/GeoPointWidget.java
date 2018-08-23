@@ -23,7 +23,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ConfigurationInfo;
 import android.preference.PreferenceManager;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -32,17 +31,21 @@ import org.javarosa.core.model.data.GeoPointData;
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
+import org.odk.collect.android.activities.FormEntryActivity;
 import org.odk.collect.android.activities.GeoPointActivity;
 import org.odk.collect.android.activities.GeoPointMapActivity;
 import org.odk.collect.android.activities.GeoPointOsmMapActivity;
 import org.odk.collect.android.application.Collect;
+import org.odk.collect.android.listeners.PermissionListener;
 import org.odk.collect.android.preferences.PreferenceKeys;
 import org.odk.collect.android.utilities.PlayServicesUtil;
 import org.odk.collect.android.widgets.interfaces.BinaryWidget;
 
 import java.text.DecimalFormat;
+import java.util.Locale;
 
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
+import static org.odk.collect.android.utilities.PermissionUtils.requestLocationPermissions;
 
 /**
  * GeoPointWidget is the widget that allows the user to get GPS readings.
@@ -62,10 +65,10 @@ public class GeoPointWidget extends QuestionWidget implements BinaryWidget {
     private static final String GOOGLE_MAP_KEY = "google_maps";
     private final boolean readOnly;
     private final boolean useMapsV2;
-    private Button getLocationButton;
-    private Button viewButton;
-    private String mapSDK;
-    private TextView answerDisplay;
+    private final Button getLocationButton;
+    private final Button viewButton;
+    private final String mapSDK;
+    private final TextView answerDisplay;
     private boolean useMaps;
     private double accuracyThreshold;
     private boolean draggable = true;
@@ -88,10 +91,10 @@ public class GeoPointWidget extends QuestionWidget implements BinaryWidget {
 
         // use mapsV2 if it is available and was requested;
         useMapsV2 = useMapsV2(context);
-        if (appearance != null && appearance.equalsIgnoreCase("placement-map") && useMapsV2) {
+        if (appearance != null && appearance.toLowerCase(Locale.US).contains("placement-map") && useMapsV2) {
             draggable = true;
             useMaps = true;
-        } else if (appearance != null && appearance.equalsIgnoreCase("maps") && useMapsV2) {
+        } else if (appearance != null && appearance.toLowerCase(Locale.US).contains("maps") && useMapsV2) {
             draggable = false;
             useMaps = true;
         } else {
@@ -158,7 +161,7 @@ public class GeoPointWidget extends QuestionWidget implements BinaryWidget {
             } else {
                 getLocationButton.setVisibility(View.VISIBLE);
                 getLocationButton.setText(getContext().getString(
-                        dataAvailable ? R.string.get_point : R.string.get_point));
+                        dataAvailable ? R.string.change_location : R.string.get_point));
             }
 
             if (useMaps) {
@@ -240,14 +243,6 @@ public class GeoPointWidget extends QuestionWidget implements BinaryWidget {
     }
 
     @Override
-    public void setFocus(Context context) {
-        // Hide the soft keyboard if it's showing.
-        InputMethodManager inputManager = (InputMethodManager) context
-                .getSystemService(Context.INPUT_METHOD_SERVICE);
-        inputManager.hideSoftInputFromWindow(this.getWindowToken(), 0);
-    }
-
-    @Override
     public void setBinaryData(Object answer) {
         String s = (String) answer;
 
@@ -291,6 +286,19 @@ public class GeoPointWidget extends QuestionWidget implements BinaryWidget {
 
     @Override
     public void onButtonClick(int buttonId) {
+        requestLocationPermissions((FormEntryActivity) getContext(), new PermissionListener() {
+            @Override
+            public void granted() {
+                startGeoPoint();
+            }
+
+            @Override
+            public void denied() {
+            }
+        });
+    }
+
+    private void startGeoPoint() {
         Collect.getInstance()
                 .getActivityLogger()
                 .logInstanceAction(this, "recordLocation", "click",

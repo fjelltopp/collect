@@ -31,10 +31,9 @@ import static org.odk.collect.android.activities.FormEntryActivity.LOCATION_RESU
 import static org.odk.collect.android.location.activities.GeoPointActivityTest.newMockLocation;
 import static org.robolectric.Shadows.shadowOf;
 
-
 @Config(constants = BuildConfig.class)
 @RunWith(RobolectricTestRunner.class)
-public class GeoPointOsmMapActivityTest {
+public class GeoPointOsmMapActivityTest extends BaseGeoActivityTest {
 
     @Rule
     public MockitoRule rule = MockitoJUnit.rule();
@@ -55,6 +54,7 @@ public class GeoPointOsmMapActivityTest {
      */
     @Before
     public void setUp() throws Exception {
+        super.setUp();
         activityController = Robolectric.buildActivity(GeoPointOsmMapActivity.class);
         activity = activityController.get();
         shadowActivity = shadowOf(activity);
@@ -104,6 +104,4 @@ public class GeoPointOsmMapActivityTest {
                 activity.getResultString(secondLocation));
 
     }
-
-    
 }

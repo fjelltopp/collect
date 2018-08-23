@@ -19,7 +19,6 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.ViewPager;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
 import org.odk.collect.android.R;
@@ -31,10 +30,10 @@ import org.odk.collect.android.views.SlidingTabLayout;
 
 import java.util.ArrayList;
 
-public class FileManagerTabs extends AppCompatActivity {
+public class FileManagerTabs extends CollectAbstractActivity {
 
-    private DataManagerList dataManagerList = DataManagerList.newInstance();
-    private FormManagerList formManagerList = FormManagerList.newInstance();
+    private final DataManagerList dataManagerList = DataManagerList.newInstance();
+    private final FormManagerList formManagerList = FormManagerList.newInstance();
 
     private void initToolbar() {
         Toolbar toolbar = findViewById(R.id.toolbar);

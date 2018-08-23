@@ -9,24 +9,11 @@
             android:summary="@string/allow_form_sync_summary"
             android:title="@string/allow_form_sync"/>
         <EditTextPreference
-            android:id="@+id/form_sync_url"
-            android:defaultValue="@string/default_form_sync_url"
-            android:inputType="textNoSuggestions"
-            android:key="form_sync_url"
-            android:title="@string/form_sync_url"
-            android:layout="?android:attr/preferenceLayoutChild"/>
-        <EditTextPreference
             android:inputType="number"
             android:defaultValue="60"
             android:key="sync_interval"
             android:summary="@string/sync_interval_summary"
             android:title="@string/sync_interval"
-            android:layout="?android:attr/preferenceLayoutChild"/>
-        <EditTextPreference
-            android:inputType="number"
-            android:defaultValue="0"
-            android:key="last_update"
-            android:title="@string/last_update"
             android:layout="?android:attr/preferenceLayoutChild"/>
         <Preference
             android:title="@string/force_update"

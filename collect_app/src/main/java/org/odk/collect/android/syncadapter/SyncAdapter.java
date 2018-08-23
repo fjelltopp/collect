@@ -22,41 +22,41 @@ import android.content.ContentProviderClient;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SyncResult;
-import android.database.sqlite.SQLiteDatabase;
+import android.database.Cursor;
 import android.os.Bundle;
-import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 // import org.odk.collect.android.database.SyncSQLiteContract.SyncFileEntry;
 // import org.odk.collect.android.database.SyncSQLiteOpenHelper;
 // import org.odk.collect.android.gcm.SendDeviceReport;
-import org.odk.collect.android.preferences.PreferencesActivity;
+import org.odk.collect.android.dao.FormsDao;
+import org.odk.collect.android.logic.FormDetails;
 import org.odk.collect.android.preferences.PreferenceKeys;
-import org.odk.collect.android.utilities.FileUtils;
-// import org.odk.collect.android.utilities.NotificationUtils;
+import org.odk.collect.android.provider.FormsProviderAPI;
+import org.odk.collect.android.tasks.DownloadFormListTask;
+import org.odk.collect.android.tasks.DownloadFormsTask;
+import org.odk.collect.android.utilities.DownloadFormListUtils;
+import org.odk.collect.android.utilities.XmlStreamUtils;
+import org.odk.collect.android.utilities.XmlStreamUtils.XFormHeader;
+import org.xmlpull.v1.XmlPullParserException;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.net.ssl.HttpsURLConnection;
+
+import static org.odk.collect.android.utilities.DownloadFormListUtils.downloadFormList;
 
 /**
  * Define a sync adapter for the app.
@@ -132,19 +132,15 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 
 
     	if (allowSync || forceSync) {
-			URL location;
-			String location_url;
+			URL aggregate_url;
 	    	Log.i(TAG, "Synchronization started");
 			try {
-				location_url = sp.getString(PreferenceKeys.KEY_FORM_SYNC_URL, null);
-				if (location_url.endsWith(File.separator)){
-					location_url=location_url.substring(0,location_url.length()-1);
-				}
-				location = new URL(location_url + "/");
-				
-				
-				
-				syncFileTree(location, SYNCFOLDER, forceSync, syncResult);
+
+				aggregate_url = new URL(
+				        sp.getString(PreferenceKeys.KEY_SERVER_URL, null) + "/") ;
+                aggregate_url = new URL("https://som.emro.info");
+				syncForms(aggregate_url, forceSync, syncResult);
+
 			} catch (MalformedURLException e) {
 				Log.e(TAG,"Malformed URL");
 			} catch (IOException e) {
@@ -165,181 +161,61 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
     	    Log.i(TAG, "Sync disabled");
         }
     }
-    
-    private void syncFileTree(final URL url, final File folder, boolean forceSync, SyncResult syncResult) throws IOException {
-    	String absolutePath;
-    	String relativePath;
-    	String cleanedRelativePath;
-    	String workPath;
-    	String urlpath;
-    	URL newurl;
 
-		String localMD5;
-		String remoteMD5;
-    	
-    	File[] filelist = folder.listFiles();
-    	String msg = "Sync folder cannot be read or is empty";
-    	if(filelist == null) {throw new IOException(msg);}
-    	
-    	for (File file : filelist) {
-    		absolutePath = file.getAbsolutePath();
-    		relativePath = absolutePath.replaceFirst(SYNCFOLDER.getAbsolutePath(), "");
-    		if (relativePath.startsWith(File.separator)) {cleanedRelativePath = relativePath.substring(1);}
-    			else {cleanedRelativePath = relativePath;}
-    		
-    		//fetch new csv file corresponding to the imported file unless corresponding csv exists, in which case continue
-    		if (cleanedRelativePath.endsWith(".imported")) {
-    			cleanedRelativePath=cleanedRelativePath.replaceAll(".imported", "");
-				File csvToImport = new File(absolutePath.replaceAll(".imported", ""));
-				if (csvToImport.exists()){
-					continue;
-				}
-    		} else if (cleanedRelativePath.endsWith(".bad")) {
-				//fetch new xml file corresponding to the broken file unless corresponding xml exists, in which case continue
-				cleanedRelativePath=cleanedRelativePath.replaceAll(".bad", "");
-				File xmlToImport = new File(absolutePath.replaceAll(".bad", ""));
-				if (xmlToImport.exists()){
-					continue;
-				}
-			}
+    private void syncForms(final URL url, boolean forceSync, SyncResult syncResult) throws IOException {
 
-    		try {
+        Cursor c = null;
+        List formHeaders;
+        ArrayList<FormDetails> formsToDownload = new ArrayList<FormDetails>();
 
-    			workPath=SYNCFOLDER.getAbsolutePath() + File.separator + cleanedRelativePath;
-    			urlpath=url.toString() + cleanedRelativePath;
+        try {
+            c = new FormsDao().getFormsCursor();
 
-				//Encode the URL to accommodate special characters
-				urlpath= URLEncoder.encode(urlpath,"UTF-8");
-				urlpath=urlpath.replace("%3A", ":");
-				urlpath=urlpath.replace("%2F", "/");
+            if (c.getCount() > 0) {
+                c.moveToPosition(-1);
+                HashMap<String, FormDetails> formDetailsHashMap =
+                        DownloadFormListUtils.downloadFormList(true);
+                while (c.moveToNext()) {
+                    String currentFormId = c.getString(c.getColumnIndex(FormsProviderAPI.FormsColumns.JR_FORM_ID));
+                    //XFormHeader currentFormHeader = getCurrentFormHeader(
+                     //       formHeaders,
+                    //        c.getString(c.getColumnIndex(FormsProviderAPI.FormsColumns.JR_FORM_ID)));
+                    //String remoteFormMD5 = currentFormHeader.hash;
+                    String remoteFormMD5 = formDetailsHashMap.get(currentFormId).getHash();
+                    String localFormMD5 = "md5:" + c.getString(c.getColumnIndex(
+                            FormsProviderAPI.FormsColumns.MD5_HASH));
+                    if (formDetailsHashMap.get(currentFormId).isNewerFormVersionAvailable()
+                            || formDetailsHashMap.get(currentFormId).areNewerMediaFilesAvailable()) {
+                        formsToDownload.add(formDetailsHashMap.get(currentFormId));
+                    }
 
+                    ArrayList<String> mediaFiles = getMediaFiles(c.getString(
+                            c.getColumnIndex(FormsProviderAPI.FormsColumns.FORM_MEDIA_PATH)));
+                    for (String mediaFile : mediaFiles) {
+                        //String remoteMediaFileMD5 = remoteMediaFileMD5OnAggregate(form);
+                        //String localMediaFileMD5 = localMediaFileMD5OnAggregate(form);
+                        //if (!remoteMediaFileMD5.equals(localMediaFileMD5)) {
+                        //    downloadUrl(new URL(""));
+                        //}
 
-    			newurl = new URL(urlpath);
-				Log.i(TAG,"Syncing url " + urlpath);
-    			
-    			if (file.isFile()) {
-
-					//Get MD5 hash on device
-					localMD5= FileUtils.getMd5Hash(file);
-					Log.i(TAG, "Local file MD5: " + localMD5);
-
-					//Get MD5 hash on server
-					remoteMD5 = remoteMD5OnServer(newurl);
-					try {
-						remoteMD5 = remoteMD5.replace("\"", ""); // remove double quotes
-					} catch (NullPointerException e) {
-						Log.w(TAG, "Could not read remote MD5: " + e.getMessage());
-						remoteMD5 = null;
-					}
-					Log.i(TAG, "Remote file MD5: " + remoteMD5);
-			
-    				//Compare MD5 sums and update if there's a difference
-					boolean matchingMD5=false;
-					try {
-						matchingMD5 = localMD5.equals(remoteMD5);
-					} catch (NullPointerException e) {
-						Log.e(TAG, "MD5 comparison failed: " + e.getMessage());
-						matchingMD5 = false;
-					}
-    				if (!matchingMD5 && (remoteMD5 != null)) {
-    					InputStream stream = downloadUrl(newurl);
-						updateLocalData(new File(workPath), stream, syncResult);
-    				}
-    			} else if (file.isDirectory()) {
-    				syncFileTree(url, file, forceSync, syncResult);
-    			}
-    		} catch (UnsupportedEncodingException e) {
-    			Log.e(TAG,"Encoding not supported" + e.getMessage());
-    		} catch (MalformedURLException e) {
-    			Log.e(TAG,"URL not valid: " + e.getMessage());
-    		}
-    	}
+                    }
+                }
+                DownloadFormsTask downloadFormsTask = new DownloadFormsTask();
+                downloadFormsTask.execute(formsToDownload);
+            }
+        } catch (Exception e) {
+            Log.e(TAG,e.getMessage());
+        }
     }
 
 
+    private ArrayList<String> getMediaFiles(String formMediaPath) {
+        String[] array = new String[]{"demo_register","demo_case"};
+        return new ArrayList<>(Arrays.asList(array));
 
-    public void updateLocalData(final File outputfile, final InputStream stream, final SyncResult syncResult) throws IOException {
-    	Log.i(TAG, "Updating file " + outputfile.getAbsolutePath());
-    	File cacheDir = this.getContext().getCacheDir();
-    	File cacheFile = File.createTempFile(outputfile.getName(), ".tmp", cacheDir);
-    	BufferedInputStream bis = null;
-    	InputStream is = null;
-    	OutputStream os = null;
-    	BufferedOutputStream bos = null;
-    	try{
-    		Log.i(TAG, "Printing stream to cache file");
-    		
-    		os = new FileOutputStream(cacheFile);
-    		bos = new BufferedOutputStream(os);
-    		
-    		byte[] buffer = new byte[256];
-    		int read;
-    		while ((read = stream.read(buffer)) != -1) {
-    			bos.write(buffer,0,read);
-    		}
-    	} catch (IOException e) {
-    		Log.e(TAG, "Error while reading stream: " + e.getMessage());
-    		// TODO: migrate NotificationUtils
-//			NotificationUtils.raiseNotification(1, this.getContext().getString(R.string.app_name)
-//					+ " " + this.getContext().getString(R.string.sync_warning),
-//					this.getContext().getString(R.string.sync_error_local));
-    	} finally {
-    		try{
-    			if (stream != null) {
-    				stream.close();
-    			}
-    			if (bos != null){
-    				bos.flush();
-    				bos.close();
-    			}
 
-    		} catch (IOException e) {
-    			Log.e(TAG,"Error while closing streams: " + e.getMessage());
-    		}
-    	}
-    	
-    	try{
-    		outputfile.delete();
-    		Log.i(TAG, "Reading cache file");
-    		is = new FileInputStream(cacheFile);
-    		os = new FileOutputStream(outputfile);
-      		bos = new BufferedOutputStream(os);
-    		
-    		byte[] buffer = new byte[256];
-    		int read;
-    		while ((read = is.read(buffer)) != -1) {
-    			bos.write(buffer,0,read);
-    		}
-    		cacheFile.delete();
-			Log.i(TAG, "File " + outputfile.getAbsolutePath() + " updated");
-//			NotificationUtils.raiseNotification(-1, this.getContext().getString(R.string.app_name)
-//							+ " " + this.getContext().getString(R.string.sync_form_info),
-//					this.getContext().getString(R.string.sync_form_file) + " " + outputfile.getName() +
-//							" " + this.getContext().getString(R.string.sync_form_updated));
-    	} catch (IOException e) {
-    		Log.e(TAG,"Error while reading from cache file: " + e.getMessage());
-    	} finally {
-    		try{
-    			if (is != null) {
-    				is.close();
-    			}
-    			if (bos != null){
-    				bos.flush();
-    				bos.close();
-    			}
-
-    		} catch (IOException e) {
-    			Log.e(TAG,"Error while closing cache stream: " + e.getMessage());
-    		}
-    	}
-    	
-
-    	
     }
 
-    
-    
-        
     private InputStream downloadUrl(final URL url) throws IOException {
         HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
         conn.setReadTimeout(NET_READ_TIMEOUT_MILLIS /* milliseconds */);
@@ -355,61 +231,69 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
         }
         return conn.getInputStream();
     }
-    
-    private InputStream downloadZipFromUrl(final URL url) throws IOException {
-        HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-        conn.setReadTimeout(NET_READ_TIMEOUT_MILLIS /* milliseconds */);
-        conn.setConnectTimeout(NET_CONNECT_TIMEOUT_MILLIS /* milliseconds */);
-        conn.setRequestMethod("GET");
-        conn.setDoInput(true);
-        // Starts the query
+
+    private List getFormHeaders(URL aggregate_url) throws IOException {
+        String aggregate_url_text = aggregate_url.toString();
+        List<XFormHeader> formHeaderList;
+        InputStream inputStream;
+        URL url = new URL(aggregate_url_text + "/xformsList");
         try {
-        conn.connect();
-        } catch (IOException e) {
-        	Log.e(TAG, "Error connecting to network: " + e.toString());
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setReadTimeout(NET_READ_TIMEOUT_MILLIS /* milliseconds */);
+            conn.setConnectTimeout(NET_CONNECT_TIMEOUT_MILLIS /* milliseconds */);
+            conn.setRequestMethod("GET");
+            inputStream = conn.getInputStream();
+            formHeaderList = XmlStreamUtils.readFormHeaders(inputStream);
+
+            return formHeaderList;
         }
-        return conn.getInputStream();
+        catch (IOException e) {
+            Log.e(TAG, "Could not fetch form headers from Aggregate");
+            //throw new IOException("Could not fetch Aggregate form MD5", e);
+            return null;
+        } catch (XmlPullParserException e) {
+            throw new IOException("Broken form manifest in Aggregate", e);
+        }
     }
 
-	private String remoteMD5OnServer (final URL url) throws IOException {
-		String remoteMD5 = "";
-		try {
-			HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-			conn.setReadTimeout(NET_READ_TIMEOUT_MILLIS /* milliseconds */);
-			conn.setConnectTimeout(NET_CONNECT_TIMEOUT_MILLIS /* milliseconds */);
-			conn.setRequestMethod("HEAD");
-			conn.setDoInput(true);
-			conn.connect();
-			remoteMD5=conn.getHeaderField("eTag");
-			conn.disconnect();
-			return remoteMD5;
-		} 	catch (IOException e) {
-			throw new IOException("Could not fetch remote MD5", e);
-		}
-	}
+    private XFormHeader getCurrentFormHeader(List<XFormHeader> formHeaderList, String formID) {
+        try {
+            for (XFormHeader header : formHeaderList) {
+                if (header.formId.equals(formID)) {
+                    return header;
+                }
+            }
+            Log.w(TAG, "No remote header found for form " + formID);
+            return null;
+        } catch (Exception e) {
+            Log.e(TAG, "Unexpected form header structure: " + e.getMessage());
+            return null;
+        }
+}
 
-	private String remoteMD5OnAggregate (final URL url) throws IOException {
+    private String remoteMediaFileMD5OnAggregate (String formID) throws IOException {
         String server_response = "";
-    	String remoteMD5 = "";
-    	try {
-			HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
-			conn.setReadTimeout(NET_READ_TIMEOUT_MILLIS /* milliseconds */);
-			conn.setConnectTimeout(NET_CONNECT_TIMEOUT_MILLIS /* milliseconds */);
-			conn.setRequestMethod("GET");
+        String remoteMD5 = "";
+        URL url = new URL("");
+        try {
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+            conn.setReadTimeout(NET_READ_TIMEOUT_MILLIS /* milliseconds */);
+            conn.setConnectTimeout(NET_CONNECT_TIMEOUT_MILLIS /* milliseconds */);
+            conn.setRequestMethod("GET");
             server_response = readStream(conn.getInputStream());
-		}
-		catch (IOException e) {
-			throw new IOException("Could not fetch Aggregate form MD5", e);
-		}
+        }
+        catch (IOException e) {
+            throw new IOException("Could not fetch Aggregate form MD5", e);
+        }
         return "";
-	}
+    }
 
 	private String readStream(InputStream in) {
 		BufferedReader reader = null;
 		StringBuffer response = new StringBuffer();
 		try {
 			reader = new BufferedReader(new InputStreamReader(in));
-			String line = "";
+			String line;
 			while ((line = reader.readLine()) != null) {
 				response.append(line);
 			}

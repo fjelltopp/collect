@@ -16,7 +16,6 @@ package org.odk.collect.android.widgets;
 
 import android.app.Activity;
 import android.content.Context;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -30,7 +29,10 @@ import org.odk.collect.android.R;
 import org.odk.collect.android.activities.FormEntryActivity;
 import org.odk.collect.android.activities.ScannerWithFlashlightActivity;
 import org.odk.collect.android.application.Collect;
+import org.odk.collect.android.listeners.PermissionListener;
 import org.odk.collect.android.widgets.interfaces.BinaryWidget;
+
+import static org.odk.collect.android.utilities.PermissionUtils.requestCameraPermission;
 
 /**
  * Widget that allows user to scan barcodes and add them to the form.
@@ -38,8 +40,8 @@ import org.odk.collect.android.widgets.interfaces.BinaryWidget;
  * @author Yaw Anokwa (yanokwa@gmail.com)
  */
 public class BarcodeWidget extends QuestionWidget implements BinaryWidget {
-    private Button getBarcodeButton;
-    private TextView stringAnswer;
+    private final Button getBarcodeButton;
+    private final TextView stringAnswer;
 
     public BarcodeWidget(Context context, FormEntryPrompt prompt) {
         super(context, prompt);
@@ -92,14 +94,6 @@ public class BarcodeWidget extends QuestionWidget implements BinaryWidget {
     }
 
     @Override
-    public void setFocus(Context context) {
-        // Hide the soft keyboard if it's showing.
-        InputMethodManager inputManager = (InputMethodManager) context
-                .getSystemService(Context.INPUT_METHOD_SERVICE);
-        inputManager.hideSoftInputFromWindow(this.getWindowToken(), 0);
-    }
-
-    @Override
     public void setOnLongClickListener(OnLongClickListener l) {
         stringAnswer.setOnLongClickListener(l);
         getBarcodeButton.setOnLongClickListener(l);
@@ -114,18 +108,27 @@ public class BarcodeWidget extends QuestionWidget implements BinaryWidget {
 
     @Override
     public void onButtonClick(int buttonId) {
-        Collect.getInstance()
-                .getActivityLogger()
-                .logInstanceAction(this, "recordBarcode", "click",
-                        getFormEntryPrompt().getIndex());
+        requestCameraPermission((FormEntryActivity) getContext(), new PermissionListener() {
+            @Override
+            public void granted() {
+                Collect.getInstance()
+                        .getActivityLogger()
+                        .logInstanceAction(this, "recordBarcode", "click",
+                                getFormEntryPrompt().getIndex());
 
-        waitForData();
+                waitForData();
 
-        new IntentIntegrator((Activity) getContext())
-                .setCaptureActivity(ScannerWithFlashlightActivity.class)
-                .setDesiredBarcodeFormats(IntentIntegrator.ALL_CODE_TYPES)
-                .setOrientationLocked(false)
-                .setPrompt(getContext().getString(R.string.barcode_scanner_prompt))
-                .initiateScan();
+                new IntentIntegrator((Activity) getContext())
+                        .setCaptureActivity(ScannerWithFlashlightActivity.class)
+                        .setDesiredBarcodeFormats(IntentIntegrator.ALL_CODE_TYPES)
+                        .setOrientationLocked(false)
+                        .setPrompt(getContext().getString(R.string.barcode_scanner_prompt))
+                        .initiateScan();
+            }
+
+            @Override
+            public void denied() {
+            }
+        });
     }
 }

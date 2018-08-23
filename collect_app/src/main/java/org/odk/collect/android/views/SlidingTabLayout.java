@@ -15,7 +15,6 @@ package org.odk.collect.android.views;
  * limitations under the License.
  */
 
-
 import android.content.Context;
 import android.graphics.Typeface;
 import android.support.v4.content.ContextCompat;
@@ -60,7 +59,7 @@ public class SlidingTabLayout extends HorizontalScrollView {
     private boolean distributeEvenly;
 
     private ViewPager viewPager;
-    private SparseArray<String> contentDescriptions = new SparseArray<String>();
+    private final SparseArray<String> contentDescriptions = new SparseArray<String>();
     private ViewPager.OnPageChangeListener viewPagerPageChangeListener;
     private int titleFontSize = -1;
     private int titleFontColor = -1;
