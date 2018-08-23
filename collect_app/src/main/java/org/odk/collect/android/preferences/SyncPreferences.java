@@ -14,7 +14,9 @@
 
 package org.odk.collect.android.preferences;
 
+import android.accounts.Account;
 import android.app.Fragment;
+import android.content.ContentResolver;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.Preference;
@@ -24,10 +26,13 @@ import android.view.View;
 import com.google.android.gms.analytics.GoogleAnalytics;
 
 import org.odk.collect.android.R;
+import org.odk.collect.android.application.Collect;
 
 import static org.odk.collect.android.preferences.PreferenceKeys.KEY_ANALYTICS;
+import static org.odk.collect.android.syncadapter.SyncUtils.AUTHORITY;
+import static org.odk.collect.android.syncadapter.SyncUtils.CreateSyncAccount;
 
-public class SyncPreferences extends BasePreferenceFragment {
+public class SyncPreferences extends BasePreferenceFragment implements Preference.OnPreferenceClickListener{
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -49,10 +54,12 @@ public class SyncPreferences extends BasePreferenceFragment {
         }
     }
 
+    @Override
     public boolean onPreferenceClick(Preference preference) {
-        Fragment fragment = null;
         if (preference.getKey().equals("force_update")) {
-
+            Bundle settingsBundle = new Bundle();
+            Account account = CreateSyncAccount(Collect.getInstance().getApplicationContext());
+            ContentResolver.requestSync(account, AUTHORITY, settingsBundle);
         }
         return true;
     }

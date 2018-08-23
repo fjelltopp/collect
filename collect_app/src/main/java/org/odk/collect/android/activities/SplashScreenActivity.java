@@ -31,6 +31,8 @@ import android.view.Window;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import com.google.firebase.messaging.FirebaseMessaging;
+
 import org.odk.collect.android.BuildConfig;
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
@@ -140,6 +142,13 @@ public class SplashScreenActivity extends Activity {
                 Collect.refreshSettings(getApplicationContext());
             } catch (RuntimeException e) {
                 createErrorDialog(e.getMessage(), EXIT);
+            }
+
+            //subscribe to messaging topics
+            try {
+                FirebaseMessaging.getInstance().subscribeToTopic(BuildConfig.FLAVOR);
+            } catch (Exception e) {
+                Timber.e(e.getMessage());
             }
 
             startSplashScreen(splashPath);
