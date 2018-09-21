@@ -16,7 +16,10 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
 import org.odk.collect.android.R;
+import org.odk.collect.android.activities.NotificationActivity;
 import org.odk.collect.android.application.Collect;
+
+import java.util.Map;
 
 import timber.log.Timber;
 
@@ -50,7 +53,7 @@ public class CollectFirebaseMessagingService extends FirebaseMessagingService {
         if (remoteMessage.getData().size() > 0) {
             Timber.d("Message data payload: %s", remoteMessage.getData());
 
-            handleNow();
+            showMessage(remoteMessage.getData());
 
         }
 
@@ -64,28 +67,15 @@ public class CollectFirebaseMessagingService extends FirebaseMessagingService {
     }
     // [END receive_message]
 
-
-    // [START on_new_token]
-    /**
-     * Called if InstanceID token is updated. This may occur if the security of
-     * the previous token had been compromised. Note that this is called when the InstanceID token
-     * is initially generated so this is where you would retrieve the token.
-     */
-    @Override
-    public void onNewToken(String token) {
-        Timber.d("Refreshed token: %s", token);
-
-        // If you want to send messages to this application instance or
-        // manage this apps subscriptions on the server side, send the
-        // Instance ID token to your app server.
-        sendRegistrationToServer(token);
-    }
-    // [END on_new_token]
-
     /**
      * Handle time allotted to BroadcastReceivers.
      */
-    private void handleNow() {
+    private void showMessage(Map<String, String> message) {
+        Intent notifyIntent = new Intent(Collect.getInstance(), NotificationActivity.class);
+        notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        notifyIntent.putExtra(NotificationActivity.NOTIFICATION_TITLE, Collect.getInstance().getString(R.string.upload_results));
+        notifyIntent.putExtra(NotificationActivity.NOTIFICATION_MESSAGE, "message");
+
         Timber.d("Short lived task is done.");
     }
 

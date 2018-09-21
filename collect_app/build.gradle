@@ -231,12 +231,17 @@ dependencies {
     implementation "com.android.support:exifinterface:${rootProject.supportLibraryVersion}"
     implementation "com.android.support:multidex:1.0.3"
 
+    implementation "com.google.android.gms:play-services:${rootProject.playServicesVersion}"
     implementation "com.google.android.gms:play-services-analytics:${rootProject.playServicesVersion}"
     implementation "com.google.android.gms:play-services-auth:${rootProject.playServicesVersion}"
     implementation "com.google.android.gms:play-services-maps:${rootProject.playServicesVersion}"
     implementation "com.google.android.gms:play-services-location:${rootProject.playServicesVersion}"
 
     implementation "com.google.firebase:firebase-core:${rootProject.playServicesVersion}"
+    //implementation 'com.google.firebase:firebase-auth:16.0.3'
+    implementation "com.google.firebase:firebase-auth:${rootProject.playServicesVersion}"
+    // Firebase Cloud Messaging
+    implementation "com.google.firebase:firebase-messaging:${rootProject.playServicesVersion}"
     implementation "com.crashlytics.sdk.android:crashlytics:2.9.2"
 
     implementation("com.google.code.gson:gson:2.6.2") {
@@ -343,7 +348,7 @@ dependencies {
 
 // Must be at bottom to prevent dependency collisions
 // https://developers.google.com/android/guides/google-services-plugin
-// apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.google.gms.google-services'
 
 
 
