@@ -18,6 +18,7 @@ import com.google.firebase.messaging.RemoteMessage;
 import org.odk.collect.android.R;
 import org.odk.collect.android.activities.NotificationActivity;
 import org.odk.collect.android.application.Collect;
+import org.odk.collect.android.utilities.IconUtils;
 
 import java.util.Map;
 
@@ -71,10 +72,22 @@ public class CollectFirebaseMessagingService extends FirebaseMessagingService {
      * Handle time allotted to BroadcastReceivers.
      */
     private void showMessage(Map<String, String> message) {
-        Intent notifyIntent = new Intent(Collect.getInstance(), NotificationActivity.class);
-        notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        notifyIntent.putExtra(NotificationActivity.NOTIFICATION_TITLE, Collect.getInstance().getString(R.string.upload_results));
-        notifyIntent.putExtra(NotificationActivity.NOTIFICATION_MESSAGE, "message");
+        Intent intent = new Intent(Collect.getInstance(), NotificationActivity.class);
+        intent.putExtra(NotificationActivity.NOTIFICATION_TITLE, message.get("title"));
+        intent.putExtra(NotificationActivity.NOTIFICATION_MESSAGE, message.get("message"));
+        PendingIntent contentIntent = PendingIntent.getActivity(Collect.getInstance().getApplicationContext(), 101, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(Collect.getInstance().getApplicationContext())
+                .setSmallIcon(IconUtils.getNotificationAppIcon())
+                .setContentTitle("notification_title")
+                .setContentText("notification_text")
+                .setAutoCancel(true)
+                .setContentIntent(contentIntent);
+
+        NotificationManager manager = (NotificationManager) Collect.getInstance().getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            manager.notify(0, builder.build());
+        }
 
         Timber.d("Short lived task is done.");
     }
