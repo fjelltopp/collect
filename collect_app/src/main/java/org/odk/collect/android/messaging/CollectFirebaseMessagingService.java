@@ -78,9 +78,9 @@ public class CollectFirebaseMessagingService extends FirebaseMessagingService {
         PendingIntent contentIntent = PendingIntent.getActivity(Collect.getInstance().getApplicationContext(), 101, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(Collect.getInstance().getApplicationContext())
-                .setSmallIcon(IconUtils.getNotificationAppIcon())
-                .setContentTitle("notification_title")
-                .setContentText("notification_text")
+                .setSmallIcon(R.drawable.ic_message)
+                .setContentTitle(Collect.getInstance().getApplicationContext().getString(R.string.app_name))
+                .setContentText(Collect.getInstance().getApplicationContext().getString(R.string.new_message))
                 .setAutoCancel(true)
                 .setContentIntent(contentIntent);
 
@@ -89,7 +89,7 @@ public class CollectFirebaseMessagingService extends FirebaseMessagingService {
             manager.notify(0, builder.build());
         }
 
-        Timber.d("Short lived task is done.");
+        Timber.d("Message notification task is done.");
     }
 
     /**
