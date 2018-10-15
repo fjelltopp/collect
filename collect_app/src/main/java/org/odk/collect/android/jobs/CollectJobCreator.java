@@ -39,6 +39,9 @@ public class CollectJobCreator implements JobCreator {
             case FormDownloadJob.TAG:
                 return new FormDownloadJob();
 
+            case DeviceReportJob.TAG:
+                return new DeviceReportJob();
+
             default:
                 return null;
         }
