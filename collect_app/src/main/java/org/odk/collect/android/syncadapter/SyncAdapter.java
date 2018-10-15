@@ -33,6 +33,7 @@ import org.odk.collect.android.application.Collect;
 // import org.odk.collect.android.gcm.SendDeviceReport;
 import org.odk.collect.android.dao.FormsDao;
 import org.odk.collect.android.logic.FormDetails;
+import org.odk.collect.android.messaging.SendDeviceReport;
 import org.odk.collect.android.preferences.PreferenceKeys;
 import org.odk.collect.android.provider.FormsProviderAPI;
 import org.odk.collect.android.tasks.DownloadFormListTask;
@@ -138,7 +139,6 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
 
 				aggregate_url = new URL(
 				        sp.getString(PreferenceKeys.KEY_SERVER_URL, null) + "/") ;
-                aggregate_url = new URL("https://som.emro.info");
 				syncForms(aggregate_url, forceSync, syncResult);
 
 			} catch (MalformedURLException e) {
@@ -160,6 +160,7 @@ class SyncAdapter extends AbstractThreadedSyncAdapter {
     	else {
     	    Log.i(TAG, "Sync disabled");
         }
+        new SendDeviceReport().execute();
     }
 
     private void syncForms(final URL url, boolean forceSync, SyncResult syncResult) throws IOException {
