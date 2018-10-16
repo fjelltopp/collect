@@ -43,10 +43,6 @@ the specific language governing permissions and limitations under the License.
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <!-- Get permission for SyncAdapter functions. -->
-    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS"/>
-    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS"/>
-    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS"/>
     <uses-permission
         android:name="android.permission.USE_CREDENTIALS"
         android:maxSdkVersion="22" />
