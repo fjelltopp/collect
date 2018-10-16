@@ -50,6 +50,7 @@ import org.odk.collect.android.external.ExternalDataManager;
 import org.odk.collect.android.injection.config.AppComponent;
 import org.odk.collect.android.injection.config.DaggerAppComponent;
 import org.odk.collect.android.jobs.CollectJobCreator;
+import org.odk.collect.android.jobs.DeviceReportJob;
 import org.odk.collect.android.logic.FormController;
 import org.odk.collect.android.logic.PropertyManager;
 import org.odk.collect.android.preferences.AdminSharedPreferences;
@@ -338,9 +339,8 @@ public class Collect extends Application implements HasActivityInjector {
             Timber.plant(new Timber.DebugTree());
         }
 
-        //adds Synchronization account if it has not yet been added
-        Account account = CreateSyncAccount(this.getApplicationContext());
-        SyncUtils.InitSync(account);
+        // add Firebase device messages
+        DeviceReportJob.schedulePeriodicJob(Collect.getInstance().getString(R.string.every_one_hour_value));
 
         setupLeakCanary();
     }
