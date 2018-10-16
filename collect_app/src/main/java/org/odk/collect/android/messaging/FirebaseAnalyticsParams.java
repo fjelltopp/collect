@@ -1,6 +1,7 @@
 package org.odk.collect.android.messaging;
 
 public class FirebaseAnalyticsParams {
+    public static final String DEVICE_REPORT = "device_report";
 
     public static final String KEY_DEVICEID = "deviceid";
     public static final String KEY_SIMID = "simid";

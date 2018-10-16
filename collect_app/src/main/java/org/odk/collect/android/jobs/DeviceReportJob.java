@@ -69,7 +69,7 @@ public class DeviceReportJob extends Job {
 
     private PropertyManager mPropertyManager = new PropertyManager(Collect.getInstance().getApplicationContext());
 
-    SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(Collect.getInstance());
+    private SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(Collect.getInstance());
     private String app_version;
     private Integer app_version_code;
 
@@ -139,15 +139,13 @@ public class DeviceReportJob extends Job {
 
             String id = UUID.randomUUID().toString();
             // send Firebase analytics report
-            mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.SELECT_CONTENT, data);
+            mFirebaseAnalytics.logEvent(FirebaseAnalyticsParams.DEVICE_REPORT, data);
+                    // FirebaseAnalytics.Event.SELECT_CONTENT, data);
 
-            msg = "Sent message";
             sharedPreferences.edit().putLong(LAST_REPORT,System.currentTimeMillis()).apply();
         } catch (PackageManager.NameNotFoundException ex) {
-            msg = "Error :" + ex.getMessage();
             return Result.FAILURE;
         } catch (JSONException ex) {
-            msg = "Error :" + ex.getMessage();
             return Result.FAILURE;
         }
             return Result.SUCCESS;
