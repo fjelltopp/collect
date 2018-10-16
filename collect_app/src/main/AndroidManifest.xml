@@ -99,11 +99,6 @@ the specific language governing permissions and limitations under the License.
             android:authorities="${applicationId}.provider.odk.instances"
             android:exported="true" />
         <provider
-            android:name=".provider.SyncProvider"
-            android:authorities="${applicationId}.provider.odk.sync"
-            android:syncable="true"
-            android:exported="true" />
-        <provider
             android:name="android.support.v4.content.FileProvider"
             android:authorities="${applicationId}.provider"
             android:exported="false"
@@ -272,16 +267,6 @@ the specific language governing permissions and limitations under the License.
             android:enabled="true"
             android:exported="false" />
         <!-- ... -->
-
-        <service
-            android:name="org.odk.collect.android.syncadapter.AuthenticatorService">
-            <intent-filter>
-                <action android:name="android.accounts.AccountAuthenticator"/>
-            </intent-filter>
-            <meta-data
-                android:name="android.accounts.AccountAuthenticator"
-                android:resource="@xml/sync_authenticator" />
-        </service>
         <service
             android:name="org.odk.collect.android.messaging.CollectFirebaseMessagingService">
             <intent-filter>

@@ -131,8 +131,6 @@ public final class PreferenceKeys {
         hashMap.put(KEY_SPLASH_PATH,                Collect.getInstance().getString(R.string.default_splash_path));
         hashMap.put(KEY_MAP_SDK,                    GOOGLE_MAPS);
         hashMap.put(KEY_MAP_BASEMAP,                GOOGLE_MAPS_BASEMAP_DEFAULT);
-        // sync_preferences.xml
-        hashMap.put(KEY_ALLOW_FORM_SYNC,               true);
         return hashMap;
     }
 

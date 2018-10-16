@@ -79,9 +79,6 @@ public class GeneralPreferencesFragment extends BasePreferenceFragment implement
             case "user_and_device_identity":
                 fragment = new IdentityPreferences();
                 break;
-            //case "synchronization":
-            //    fragment = new SyncPreferences();
-            //    break;
         }
 
         if (fragment != null) {
