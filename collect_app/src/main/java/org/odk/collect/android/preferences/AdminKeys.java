@@ -39,6 +39,9 @@ public final class AdminKeys {
     private static final String KEY_CHANGE_SUBMISSION_TRANSPORT = "change_submission_transport";
     private static final String KEY_CHANGE_FORM_METADATA        = "change_form_metadata";
 
+    static final String KEY_GENERAL_SETTINGS                    = "odk_preferences";
+    static final String KEY_ADMIN_MODE                          = "adminMode";
+
     // client
     private static final String KEY_PERIODIC_FORM_UPDATES_CHECK = "periodic_form_updates_check";
     private static final String KEY_AUTOMATIC_UPDATE            = "automatic_update";
