@@ -287,15 +287,6 @@ the specific language governing permissions and limitations under the License.
                 android:resource="@xml/sync_authenticator" />
         </service>
         <service
-            android:name="org.odk.collect.android.syncadapter.SyncService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.content.SyncAdapter"/>
-            </intent-filter>
-            <meta-data android:name="android.content.SyncAdapter"
-                android:resource="@xml/sync_service" />
-        </service>
-        <service
             android:name="org.odk.collect.android.messaging.CollectFirebaseMessagingService">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
