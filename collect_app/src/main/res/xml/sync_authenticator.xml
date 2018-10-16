@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<account-authenticator
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accountType="org.odk.collect.android.syncadapter"
-    android:icon="@drawable/notes"
-    android:smallIcon="@drawable/notes"
-    android:label="@string/app_name"/>
-
