@@ -152,8 +152,9 @@ android {
         puntland {
             dimension "PARTNER"
         }
-        southcentral {
+        somalia_southcentral {
             dimension "PARTNER"
+            applicationId "org.odk.collect.android.southcentral"
         }
         demo {
             dimension "PARTNER"
