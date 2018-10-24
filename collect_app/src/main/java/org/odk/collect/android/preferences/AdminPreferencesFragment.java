@@ -95,6 +95,7 @@ public class AdminPreferencesFragment extends BasePreferenceFragment implements 
                 generalSettingsIntent.setClassName(BuildConfig.APPLICATION_ID, "org.odk.collect.android.preferences.PreferencesActivity");
                 generalSettingsIntent.putExtra(KEY_ADMIN_MODE,true);
                 startActivity(generalSettingsIntent);
+                break;
 
             case KEY_CHANGE_ADMIN_PASSWORD:
                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
