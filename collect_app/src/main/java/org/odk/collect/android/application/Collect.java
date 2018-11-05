@@ -14,16 +14,12 @@
 
 package org.odk.collect.android.application;
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.Application;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
@@ -31,12 +27,11 @@ import android.support.annotation.Nullable;
 import android.support.multidex.MultiDex;
 import android.support.v7.app.AppCompatDelegate;
 import android.util.Log;
-import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 
-import com.google.android.gms.analytics.GoogleAnalytics;
+import com.crashlytics.android.Crashlytics;
+import com.evernote.android.job.JobManager;
+import com.evernote.android.job.JobManagerCreateException;
 import com.google.android.gms.analytics.Tracker;
-import com.google.firebase.crash.FirebaseCrash;
 import com.squareup.leakcanary.LeakCanary;
 import com.squareup.leakcanary.RefWatcher;
 
@@ -46,14 +41,16 @@ import org.odk.collect.android.BuildConfig;
 import org.odk.collect.android.R;
 import org.odk.collect.android.database.ActivityLogger;
 import org.odk.collect.android.external.ExternalDataManager;
+import org.odk.collect.android.injection.config.AppComponent;
 import org.odk.collect.android.injection.config.DaggerAppComponent;
+import org.odk.collect.android.jobs.CollectJobCreator;
+import org.odk.collect.android.jobs.DeviceReportJob;
 import org.odk.collect.android.logic.FormController;
 import org.odk.collect.android.logic.PropertyManager;
 import org.odk.collect.android.preferences.AdminSharedPreferences;
 import org.odk.collect.android.preferences.AutoSendPreferenceMigrator;
 import org.odk.collect.android.preferences.FormMetadataMigrator;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
-import org.odk.collect.android.syncadapter.SyncUtils;
 import org.odk.collect.android.tasks.RefreshAllFormsTask;
 import org.odk.collect.android.utilities.AssetHandler;
 import org.odk.collect.android.utilities.AuthDialogUtility;
@@ -79,7 +76,6 @@ import static org.odk.collect.android.logic.PropertyManager.SCHEME_USERNAME;
 import static org.odk.collect.android.preferences.PreferenceKeys.KEY_APP_LANGUAGE;
 import static org.odk.collect.android.preferences.PreferenceKeys.KEY_FONT_SIZE;
 import static org.odk.collect.android.preferences.PreferenceKeys.KEY_USERNAME;
-import static org.odk.collect.android.syncadapter.SyncUtils.CreateSyncAccount;
 
 /**
  * The Open Data Kit Collect application.
@@ -104,7 +100,7 @@ public class Collect extends Application implements HasActivityInjector {
     public static final String SETTINGS = ODK_ROOT + File.separator + "settings";
 
     public static String defaultSysLanguage;
-    private static Collect singleton = null;
+    private static Collect singleton;
     private static long lastClickTime;
 
     @Inject
@@ -115,9 +111,10 @@ public class Collect extends Application implements HasActivityInjector {
     private ActivityLogger activityLogger;
 
     @Nullable
-    private FormController formController = null;
+    private FormController formController;
     private ExternalDataManager externalDataManager;
     private Tracker tracker;
+    private AppComponent applicationComponent;
 
     @Inject
     DispatchingAndroidInjector<Activity> androidInjector;
@@ -156,13 +153,15 @@ public class Collect extends Application implements HasActivityInjector {
             File dir = new File(dirName);
             if (!dir.exists()) {
                 if (!dir.mkdirs()) {
-                    throw new RuntimeException("ODK reports :: Cannot create directory: "
-                            + dirName);
+                    String message = getInstance().getString(R.string.cannot_create_directory, dirName);
+                    Timber.w(message);
+                    throw new RuntimeException(message);
                 }
             } else {
                 if (!dir.isDirectory()) {
-                    throw new RuntimeException("ODK reports :: " + dirName
-                            + " exists, but is not a directory");
+                    String message = getInstance().getString(R.string.not_a_directory, dirName);
+                    Timber.w(message);
+                    throw new RuntimeException(message);
                 }
             }
         }
@@ -257,11 +256,6 @@ public class Collect extends Application implements HasActivityInjector {
         return cookieStore;
     }
 
-    public void hideKeyboard(View view) {
-        InputMethodManager imm = (InputMethodManager) getInstance().getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-    }
-
     /**
      * This method uses the DeleteFormsTask to delete forms that have been diskSynced to the db
      * @throws RuntimeException
@@ -302,10 +296,19 @@ public class Collect extends Application implements HasActivityInjector {
         super.onCreate();
         singleton = this;
 
-        DaggerAppComponent.builder()
+        applicationComponent = DaggerAppComponent.builder()
                 .application(this)
-                .build()
-                .inject(this);
+                .build();
+
+        applicationComponent.inject(this);
+
+        try {
+            JobManager
+                    .create(this)
+                    .addJobCreator(new CollectJobCreator());
+        } catch (JobManagerCreateException e) {
+            Timber.e(e);
+        }
 
         reloadSharedPreferences();
 
@@ -328,9 +331,8 @@ public class Collect extends Application implements HasActivityInjector {
             Timber.plant(new Timber.DebugTree());
         }
 
-        //adds Synchronization account if it has not yet been added
-        Account account = CreateSyncAccount(this.getApplicationContext());
-        SyncUtils.InitSync(account);
+        // add Firebase device messages
+        DeviceReportJob.schedulePeriodicJob(Collect.getInstance().getString(R.string.every_one_hour_value));
 
         setupLeakCanary();
     }
@@ -359,6 +361,7 @@ public class Collect extends Application implements HasActivityInjector {
      *
      * @return tracker
      */
+
     /**
     public synchronized Tracker getDefaultTracker() {
         if (tracker == null) {
@@ -368,7 +371,6 @@ public class Collect extends Application implements HasActivityInjector {
         return tracker;
     }*/
 
-
     private static class CrashReportingTree extends Timber.Tree {
         @Override
         protected void log(int priority, String tag, String message, Throwable t) {
@@ -376,10 +378,10 @@ public class Collect extends Application implements HasActivityInjector {
                 return;
             }
 
-            FirebaseCrash.logcat(priority, tag, message);
+            Crashlytics.log(priority, tag, message);
 
             if (t != null && priority == Log.ERROR) {
-                FirebaseCrash.report(t);
+                Crashlytics.logException(t);
             }
         }
     }
@@ -402,15 +404,23 @@ public class Collect extends Application implements HasActivityInjector {
         AdminSharedPreferences.getInstance().reloadPreferences();
     }
 
-    // Preventing multiple clicks, using threshold of 500 ms
+    // Preventing multiple clicks, using threshold of 1000 ms
     public static boolean allowClick() {
         long elapsedRealtime = SystemClock.elapsedRealtime();
         boolean allowClick = (lastClickTime == 0 || lastClickTime == elapsedRealtime) // just for tests
-                || elapsedRealtime - lastClickTime > 500;
+                || elapsedRealtime - lastClickTime > 1000;
         if (allowClick) {
             lastClickTime = elapsedRealtime;
         }
         return allowClick;
+    }
+
+    public AppComponent getComponent() {
+        return applicationComponent;
+    }
+
+    public void setComponent(AppComponent applicationComponent) {
+        this.applicationComponent = applicationComponent;
     }
 
     @Override

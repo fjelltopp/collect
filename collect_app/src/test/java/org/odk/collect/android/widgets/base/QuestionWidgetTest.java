@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.logic.FormController;
+import org.odk.collect.android.widgets.ItemsetWidgetTest;
 import org.odk.collect.android.widgets.interfaces.Widget;
 
 import java.util.Random;
@@ -19,12 +20,11 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-
 public abstract class QuestionWidgetTest<W extends Widget, A extends IAnswerData>
         extends WidgetTest {
 
     protected Random random = new Random();
-    private W widget = null;
+    private W widget;
 
     @Mock
     public FormIndex formIndex;
@@ -69,7 +69,7 @@ public abstract class QuestionWidgetTest<W extends Widget, A extends IAnswerData
     @Test
     public void getAnswerShouldReturnExistingAnswerIfPromptHasExistingAnswer() {
         A answer = getInitialAnswer();
-        if (answer instanceof StringData) {
+        if (answer instanceof StringData && !(this instanceof ItemsetWidgetTest)) {
             when(formEntryPrompt.getAnswerText()).thenReturn((String) answer.getValue());
         } else {
             when(formEntryPrompt.getAnswerValue()).thenReturn(answer);

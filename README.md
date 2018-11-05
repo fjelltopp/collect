@@ -7,17 +7,31 @@
 
 ODK Collect is an Android app for filling out forms. It is designed to be used in resource-constrained environments with challenges such as unreliable connectivity or power infrastructure. ODK Collect is part of Open Data Kit (ODK), a free and open-source set of tools which help organizations author, field, and manage mobile data collection solutions. Learn more about the Open Data Kit project and its history [here](https://opendatakit.org/about/) and read about example ODK deployments [here](https://opendatakit.org/about/deployments/).
 
-ODK Collect renders forms that are compliant with the [ODK XForms standard](http://opendatakit.github.io/xforms-spec/), a subset of the [XForms 1.1 standard](https://www.w3.org/TR/xforms/) with some extensions. The form parsing is done by the [JavaRosa library](https://github.com/opendatakit/javarosa) which Collect includes as a jar.
+ODK Collect renders forms that are compliant with the [ODK XForms standard](http://opendatakit.github.io/xforms-spec/), a subset of the [XForms 1.1 standard](https://www.w3.org/TR/xforms/) with some extensions. The form parsing is done by the [JavaRosa library](https://github.com/opendatakit/javarosa) which Collect includes as a dependency.
 
+## Table of Contents
+* [Learn more about ODK Collect](#learn-more-about-odk-collect)
+* [Release cycle](#release-cycle)
+* [Setting up your development environment](#setting-up-your-development-environment)
+* [Testing a form without a server](#testing-a-form-without-a-server)
+* [Using APIs for local development](#using-apis-for-local-development)
+* [Debugging JavaRosa](#debugging-javarosa)
+* [Contributing code](#contributing-code)
+* [Contributing translations](#contributing-translations)
+* [Contributing testing](#contributing-testing)
+* [Downloading builds](#downloading-builds)
+* [Creating signed releases for Google Play Store](#creating-signed-releases-for-google-play-store)
+* [Troubleshooting](#troubleshooting)
+
+## Learn more about ODK Collect
 * ODK website: [https://opendatakit.org](https://opendatakit.org)
-* ODK Collect usage instructions: [https://opendatakit.org/use/collect](https://opendatakit.org/use/collect/)
+* ODK Collect usage documentation: [https://docs.opendatakit.org/collect-intro/](https://docs.opendatakit.org/collect-intro/)
 * ODK forum: [https://forum.opendatakit.org](https://forum.opendatakit.org)
 * ODK developer Slack chat: [http://slack.opendatakit.org](http://slack.opendatakit.org) 
-* ODK developer Slack archive: [http://opendatakit.slackarchive.io](http://opendatakit.slackarchive.io) 
-* ODK developer wiki: [https://github.com/opendatakit/opendatakit/wiki](https://github.com/opendatakit/opendatakit/wiki)
+* ODK developer Slack archive: [https://opendatakit.slackarchive.io](https://opendatakit.slackarchive.io) 
 
 ## Release cycle
-New versions of ODK Collect are released on the last Sunday of each month. We freeze commits to the master branch on the preceding Wednesday (except for bug fixes).
+New versions of ODK Collect are generally released on the last Sunday of a month. We freeze commits to the master branch on the preceding Wednesday (except for bug fixes). Releases can be requested by any community member and generally happen every 2 months. [@yanokwa](https://github.com/yanokwa) pushes the releases to the Play Store.
 
 ## Setting up your development environment
 
@@ -35,7 +49,8 @@ New versions of ODK Collect are released on the last Sunday of each month. We fr
 
 1. Open the project in the folder of your clone from Android Studio. To run the project, click on the green arrow at the top of the screen. The emulator is very slow so we generally recommend using a physical device when possible.
 
-## Testing a form locally
+## Testing a form without a server
+When you first run Collect, it is set to download forms from [https://opendatakit.appspot.com/](https://opendatakit.appspot.com/), the demo server. You can sometimes verify your changes with those forms but it can also be helpful to put a specific test form on your device. Here are some options for that:
 
 1. The `All Widgets` form from the default Aggregate server is [here](https://docs.google.com/spreadsheets/d/1af_Sl8A_L8_EULbhRLHVl8OclCfco09Hq2tqb9CslwQ/edit#gid=0). You can also try [example forms](https://github.com/XLSForm/example-forms) and [test forms](https://github.com/XLSForm/test-forms) or [make your own](https://xlsform.org).
 
@@ -95,12 +110,14 @@ implementation (project(path: ':javarosa-master')) {
 ## Contributing code
 Any and all contributions to the project are welcome. ODK Collect is used across the world primarily by organizations with a social purpose so you can have real impact!
 
-Issues tagged as [quick win](https://github.com/opendatakit/collect/labels/quick%20win) should be a good place to start. There are also currently many issues tagged as [needs reproduction](https://github.com/opendatakit/collect/labels/needs%20reproduction) which need someone to try to reproduce them with the current version of ODK Collect and comment on the issue with their findings.
+Issues tagged as [good first issue](https://github.com/opendatakit/collect/labels/good%20first%20issue) should be a good place to start. There are also currently many issues tagged as [needs reproduction](https://github.com/opendatakit/collect/labels/needs%20reproduction) which need someone to try to reproduce them with the current version of ODK Collect and comment on the issue with their findings.
 
 If you're ready to contribute code, see [the contribution guide](CONTRIBUTING.md).
 
 ## Contributing translations
-If you know a language other than English, consider contributing translations through [Transifex](https://www.transifex.com/opendatakit/collect/).
+If you know a language other than English, consider contributing translations through [Transifex](https://www.transifex.com/opendatakit/collect/). 
+
+Translations are updated right before the first beta for a release and before the release itself. To update translations, download the zip from https://www.transifex.com/opendatakit/collect/strings/. The contents of each folder then need to be moved to the Android project folders. A quick script like [the one in this gist](https://gist.github.com/lognaturel/9974fab4e7579fac034511cd4944176b) can help. We currently copy everything from Transifex to minimize manual intervention. Sometimes translation files will only get comment changes. When new languages are updated in Transifex, they need to be added to the script above. Additionally, `ApplicationConstants.TRANSLATIONS_AVAILABLE` needs to be updated. This array provides the choices for the language preference in general settings. Ideally the list could be dynamically generated.
 
 ## Contributing testing
 All releases are verified on the following devices (ordered by Android version):
@@ -113,10 +130,11 @@ All releases are verified on the following devices (ordered by Android version):
 * [LG Nexus 5X](https://www.gsmarena.com/lg_nexus_5x-7556.php) - Android 8.0.0
 
 Our regular code contributors use these devices (ordered by Android version): 
-* [XOLO Q700s plus](http://www.gsmarena.com/xolo_q700s_plus-6624.php) - Android 4.4.2
+* [Alcatel One Touch 5020D](https://www.gsmarena.com/alcatel_one_touch_m_pop-5242.php) - Android 4.1.1
+* [Xiaomi Redmi Note 4](https://www.gsmarena.com/xiaomi_redmi_note_4-8531.php) - Android 7.0
 * [Samsung Galaxy S4 GT-I9506](http://www.gsmarena.com/samsung_i9506_galaxy_s4-5542.php) - Android 5.0.1
 * [Samsung Galaxy Tab SM-T285](http://www.gsmarena.com/samsung_galaxy_tab_a_7_0_(2016)-7880.php) - Android 5.1.1
-* [Motorola G4 4th Gen XT1625](http://www.gsmarena.com/motorola_moto_g4-8103.php) - Android 7.0
+* [Motorola G 5th Gen XT1671](https://www.gsmarena.com/motorola_moto_g5-8454.php) - Android 7.0
 
 The best way to help us test is to build from source! If you aren't a developer and want to help us test release candidates, join the [beta program](https://play.google.com/apps/testing/org.odk.collect.android)!
 
@@ -156,3 +174,22 @@ If you build the app on your own using Android Studio `(Build -> Build APK)` and
 
 This problem occurs building other apps as well.
 
+#### gradlew Failure: `FAILURE: Build failed with an exception.`
+
+If you encounter an error similar to this when running `gradlew`:
+
+```
+FAILURE: Build failed with an exception
+
+What went wrong:
+A problem occurred configuring project ':collect_app'.
+> Failed to notify project evaluation listener.
+   > Could not initialize class com.android.sdklib.repository.AndroidSdkHandler
+```
+
+You may have a mismatch between the embedded Android SDK Java and the JDK installed on your machine. You may wish to set your **JAVA_HOME** environment variable to that SDK. For example, on macOS:
+
+`export JAVA_HOME="/Applications/Android Studio.app/Contents/jre/jdk/Contents/Home"
+`
+
+Note that this change might cause problems with other Java-based applications (e.g., if you uninstall Android Studio).

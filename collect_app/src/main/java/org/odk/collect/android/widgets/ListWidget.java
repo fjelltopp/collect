@@ -17,12 +17,13 @@ package org.odk.collect.android.widgets;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.support.annotation.Nullable;
+import android.support.v7.widget.AppCompatRadioButton;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ImageView;
@@ -45,6 +46,7 @@ import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.external.ExternalDataUtil;
 import org.odk.collect.android.external.ExternalSelectChoice;
+import org.odk.collect.android.listeners.AdvanceToNextListener;
 import org.odk.collect.android.utilities.FileUtils;
 import org.odk.collect.android.utilities.ViewIds;
 import org.odk.collect.android.widgets.interfaces.MultiChoiceWidget;
@@ -68,13 +70,23 @@ import timber.log.Timber;
 @SuppressLint("ViewConstructor")
 public class ListWidget extends QuestionWidget implements MultiChoiceWidget, OnCheckedChangeListener {
 
+    @Nullable
+    private AdvanceToNextListener listener;
+
+    private final boolean autoAdvance;
+
     List<SelectChoice> items; // may take a while to compute
 
     ArrayList<RadioButton> buttons;
     View center;
 
-    public ListWidget(Context context, FormEntryPrompt prompt, boolean displayLabel) {
+    public ListWidget(Context context, FormEntryPrompt prompt, boolean displayLabel, boolean autoAdvance) {
         super(context, prompt);
+
+        this.autoAdvance = autoAdvance;
+        if (context instanceof AdvanceToNextListener) {
+            listener = (AdvanceToNextListener) context;
+        }
 
         // SurveyCTO-added support for dynamic select content (from .csv files)
         XPathFuncExpr xpathFuncExpr = ExternalDataUtil.getSearchXPathExpression(
@@ -96,8 +108,7 @@ public class ListWidget extends QuestionWidget implements MultiChoiceWidget, OnC
 
         if (items != null) {
             for (int i = 0; i < items.size(); i++) {
-                RadioButton r = new RadioButton(getContext());
-
+                AppCompatRadioButton r = new AppCompatRadioButton(getContext());
                 r.setId(ViewIds.generateViewId());
                 r.setTag(i);
                 r.setEnabled(!prompt.isReadOnly());
@@ -137,9 +148,7 @@ public class ListWidget extends QuestionWidget implements MultiChoiceWidget, OnC
                                 DisplayMetrics metrics = context.getResources().getDisplayMetrics();
                                 int screenWidth = metrics.widthPixels;
                                 int screenHeight = metrics.heightPixels;
-                                b =
-                                        FileUtils.getBitmapScaledToDisplay(imageFile, screenHeight,
-                                                screenWidth);
+                                b = FileUtils.getBitmapScaledToDisplay(imageFile, screenHeight, screenWidth);
                             } catch (OutOfMemoryError e) {
                                 errorMsg = "ERROR: " + e.getMessage();
                             }
@@ -197,7 +206,6 @@ public class ListWidget extends QuestionWidget implements MultiChoiceWidget, OnC
                                 LayoutParams.WRAP_CONTENT);
                 headerParams.gravity = Gravity.CENTER_HORIZONTAL;
 
-
                 LinearLayout.LayoutParams buttonParams =
                         new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT,
                                 LayoutParams.WRAP_CONTENT);
@@ -231,7 +239,6 @@ public class ListWidget extends QuestionWidget implements MultiChoiceWidget, OnC
             }
         }
 
-
         buttonLayout.setOrientation(LinearLayout.HORIZONTAL);
 
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
@@ -239,7 +246,6 @@ public class ListWidget extends QuestionWidget implements MultiChoiceWidget, OnC
         params.addRule(RelativeLayout.RIGHT_OF, center.getId());
         addView(buttonLayout, params);
     }
-
 
     @Override
     public void clearAnswer() {
@@ -250,7 +256,6 @@ public class ListWidget extends QuestionWidget implements MultiChoiceWidget, OnC
             }
         }
     }
-
 
     @Override
     public IAnswerData getAnswer() {
@@ -263,16 +268,6 @@ public class ListWidget extends QuestionWidget implements MultiChoiceWidget, OnC
         }
     }
 
-
-    @Override
-    public void setFocus(Context context) {
-        // Hide the soft keyboard if it's showing.
-        InputMethodManager inputManager =
-                (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-        inputManager.hideSoftInputFromWindow(this.getWindowToken(), 0);
-    }
-
-
     public int getCheckedId() {
         for (int i = 0; i < buttons.size(); ++i) {
             RadioButton button = buttons.get(i);
@@ -283,7 +278,6 @@ public class ListWidget extends QuestionWidget implements MultiChoiceWidget, OnC
         return -1;
     }
 
-
     @Override
     public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
         if (!isChecked) {
@@ -292,14 +286,17 @@ public class ListWidget extends QuestionWidget implements MultiChoiceWidget, OnC
         }
 
         for (RadioButton button : this.buttons) {
-            if (button.isChecked() && !(buttonView == button)) {
+            if (button.isChecked() && buttonView != button) {
                 button.setChecked(false);
             }
         }
         Collect.getInstance().getActivityLogger().logInstanceAction(this, "onCheckedChanged",
                 items.get((Integer) buttonView.getTag()).getValue(), getFormEntryPrompt().getIndex());
-    }
 
+        if (autoAdvance && listener != null) {
+            listener.advance();
+        }
+    }
 
     @Override
     public void setOnLongClickListener(OnLongClickListener l) {
@@ -307,7 +304,6 @@ public class ListWidget extends QuestionWidget implements MultiChoiceWidget, OnC
             r.setOnLongClickListener(l);
         }
     }
-
 
     @Override
     public void cancelLongPress() {

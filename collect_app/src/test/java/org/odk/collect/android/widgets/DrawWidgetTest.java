@@ -18,7 +18,6 @@ import java.io.File;
 
 import static org.mockito.Mockito.when;
 
-
 /**
  * @author James Knight
  */
@@ -29,7 +28,7 @@ public class DrawWidgetTest extends FileWidgetTest<DrawWidget> {
     @Mock
     File file;
 
-    private String fileName = null;
+    private String fileName;
 
     @NonNull
     @Override

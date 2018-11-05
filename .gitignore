@@ -35,3 +35,6 @@ captures/
 
 # Output files
 **/output.json
+
+# Form assets 
+**/assets/forms

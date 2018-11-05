@@ -16,13 +16,13 @@
 
 package org.odk.collect.android.utilities;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class CustomSQLiteQueryBuilderTestCase {
 
-    private String[] columns = new String[] {"_id", "col1", "col2", "col3"};
+    private final String[] columns = new String[] {"_id", "col1", "col2", "col3"};
 
     @Test
     public void selectTest() {
@@ -53,7 +53,6 @@ public class CustomSQLiteQueryBuilderTestCase {
     public void toTest() {
         assertEquals("testTableName", new CustomSQLiteQueryBuilder().to("testTableName").getQuery().toString());
     }
-
 
     @Test
     public void dropIfExistsTest() {

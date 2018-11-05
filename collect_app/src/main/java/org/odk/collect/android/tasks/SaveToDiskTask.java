@@ -33,6 +33,7 @@ import org.odk.collect.android.provider.InstanceProviderAPI.InstanceColumns;
 import org.odk.collect.android.utilities.EncryptionUtils;
 import org.odk.collect.android.utilities.EncryptionUtils.EncryptedFormInformation;
 import org.odk.collect.android.utilities.FileUtils;
+import org.odk.collect.android.utilities.MediaManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,6 +41,8 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 
 import timber.log.Timber;
+
+import static org.odk.collect.android.utilities.FileUtil.getSmsInstancePath;
 
 /**
  * Background task for loading a form.
@@ -50,8 +53,8 @@ import timber.log.Timber;
 public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
 
     private FormSavedListener savedListener;
-    private boolean save;
-    private boolean markCompleted;
+    private final boolean save;
+    private final boolean markCompleted;
     private Uri uri;
     private String instanceName;
 
@@ -62,14 +65,12 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
     public static final int SAVED_AND_EXIT = 504;
     public static final int ENCRYPTION_ERROR = 505;
 
-
     public SaveToDiskTask(Uri uri, boolean saveAndExit, boolean markCompleted, String updatedName) {
         this.uri = uri;
         save = saveAndExit;
         this.markCompleted = markCompleted;
         instanceName = updatedName;
     }
-
 
     /**
      * Initialize {@link FormEntryController} with {@link org.javarosa.core.model.FormDef} from binary or from XML. If
@@ -127,8 +128,8 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
         try {
             exportData(markCompleted);
 
-            if (formController.getInstancePath() != null) {
-                removeSavepointFiles(formController.getInstancePath().getName());
+            if (formController.getInstanceFile() != null) {
+                removeSavepointFiles(formController.getInstanceFile().getName());
             }
 
             saveResult.setSaveResult(save ? SAVED_AND_EXIT : SAVED, markCompleted);
@@ -181,7 +182,7 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
             // However, it could be a not-first time saving if the user has been using the manual
             // 'save data' option from the menu. So try to update first, then make a new one if that
             // fails.
-            String instancePath = formController.getInstancePath().getAbsolutePath();
+            String instancePath = formController.getInstanceFile().getAbsolutePath();
             String where = InstanceColumns.INSTANCE_FILE_PATH + "=?";
             String[] whereArgs = {
                     instancePath
@@ -264,11 +265,17 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
 
         ByteArrayPayload payload = formController.getFilledInFormXml();
         // write out xml
-        String instancePath = formController.getInstancePath().getAbsolutePath();
+        String instancePath = formController.getInstanceFile().getAbsolutePath();
+
+        MediaManager.INSTANCE.saveChanges();
 
         publishProgress(Collect.getInstance().getString(R.string.survey_saving_saving_message));
 
-        exportXmlFile(payload, instancePath);
+        writeFile(payload, instancePath);
+
+        final ByteArrayPayload payloadSms = formController.getFilledInFormSMS();
+        // Write SMS to card
+        writeFile(payloadSms, getSmsInstancePath(instancePath));
 
         // update the uri. We have exported the reloadable instance, so update status...
         // Since we saved a reloadable instance, it is flagged as re-openable so that if any error
@@ -286,7 +293,7 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
             // and (if appropriate) encrypt the files on the side
 
             // pay attention to the ref attribute of the submission profile...
-            File instanceXml = formController.getInstancePath();
+            File instanceXml = formController.getInstanceFile();
             File submissionXml = new File(instanceXml.getParentFile(), "submission.xml");
 
             payload = formController.getSubmissionXml();
@@ -296,7 +303,7 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
             publishProgress(
                     Collect.getInstance().getString(R.string.survey_saving_finalizing_message));
 
-            exportXmlFile(payload, submissionXml.getAbsolutePath());
+            writeFile(payload, submissionXml.getAbsolutePath());
 
             // see if the form is encrypted and we can encrypt it...
             EncryptedFormInformation formInfo = EncryptionUtils.getEncryptedFormInformation(uri,
@@ -327,30 +334,7 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
             updateInstanceDatabase(false, canEditAfterCompleted);
 
             if (!canEditAfterCompleted) {
-                // AT THIS POINT, there is no going back.  We are committed
-                // to returning "success" (true) whether or not we can
-                // rename "submission.xml" to instanceXml and whether or
-                // not we can delete the plaintext media files.
-                //
-                // Handle the fall-out for a failed "submission.xml" rename
-                // in the InstanceUploader task.  Leftover plaintext media
-                // files are handled during form deletion.
-
-                // delete the restore Xml file.
-                if (!instanceXml.delete()) {
-                    String msg = "Error deleting " + instanceXml.getAbsolutePath()
-                            + " prior to renaming submission.xml";
-                    Timber.e(msg);
-                    throw new IOException(msg);
-                }
-
-                // rename the submission.xml to be the instanceXml
-                if (!submissionXml.renameTo(instanceXml)) {
-                    String msg =
-                            "Error renaming submission.xml to " + instanceXml.getAbsolutePath();
-                    Timber.e(msg);
-                    throw new IOException(msg);
-                }
+                manageFilesAfterSavingEncryptedForm(instanceXml, submissionXml);
             } else {
                 // try to delete the submissionXml file, since it is
                 // identical to the existing instanceXml file
@@ -372,11 +356,37 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
         }
     }
 
+    static void manageFilesAfterSavingEncryptedForm(File instanceXml, File submissionXml) throws IOException {
+        // AT THIS POINT, there is no going back.  We are committed
+        // to returning "success" (true) whether or not we can
+        // rename "submission.xml" to instanceXml and whether or
+        // not we can delete the plaintext media files.
+        //
+        // Handle the fall-out for a failed "submission.xml" rename
+        // in the InstanceUploader task.  Leftover plaintext media
+        // files are handled during form deletion.
+
+        // delete the restore Xml file.
+        if (!instanceXml.delete()) {
+            String msg = "Error deleting " + instanceXml.getAbsolutePath()
+                    + " prior to renaming submission.xml";
+            Timber.e(msg);
+            throw new IOException(msg);
+        }
+
+        // rename the submission.xml to be the instanceXml
+        if (!submissionXml.renameTo(instanceXml)) {
+            String msg =
+                    "Error renaming submission.xml to " + instanceXml.getAbsolutePath();
+            Timber.e(msg);
+            throw new IOException(msg);
+        }
+    }
 
     /**
-     * This method actually writes the xml to disk.
+     * Writes payload contents to the disk.
      */
-    static void exportXmlFile(ByteArrayPayload payload, String path) throws IOException {
+    static void writeFile(ByteArrayPayload payload, String path) throws IOException {
         File file = new File(path);
         if (file.exists() && !file.delete()) {
             throw new IOException("Cannot overwrite " + path + ". Perhaps the file is locked?");
@@ -408,13 +418,6 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
                 }
             }
         }
-        //        } catch (IOException e) {
-        //            Log.e(t, "Error reading from payload data stream");
-        //            e.printStackTrace();
-        //            return false;
-        //        }
-        //
-        //        return false;
     }
 
     @Override
@@ -437,12 +440,9 @@ public class SaveToDiskTask extends AsyncTask<Void, String, SaveResult> {
         }
     }
 
-
     public void setFormSavedListener(FormSavedListener fsl) {
         synchronized (this) {
             savedListener = fsl;
         }
     }
-
-
 }

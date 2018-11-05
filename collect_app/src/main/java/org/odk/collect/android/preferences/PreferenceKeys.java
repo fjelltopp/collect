@@ -21,7 +21,11 @@ public final class PreferenceKeys {
     public static final String KEY_CONSTRAINT_BEHAVIOR      = "constraint_behavior";
     public static final String KEY_HIGH_RESOLUTION          = "high_resolution";
     public static final String KEY_IMAGE_SIZE               = "image_size";
+    public static final String KEY_GUIDANCE_HINT            = "guidance_hint";
     public static final String KEY_INSTANCE_SYNC            = "instance_sync";
+    public static final String KEY_PERIODIC_FORM_UPDATES_CHECK = "periodic_form_updates_check";
+    public static final String KEY_AUTOMATIC_UPDATE         = "automatic_update";
+    public static final String KEY_HIDE_OLD_FORM_VERSIONS   = "hide_old_form_versions";
 
     // form_metadata_preferences.xml
     public static final String KEY_METADATA_USERNAME        = "metadata_username";
@@ -42,8 +46,13 @@ public final class PreferenceKeys {
 
     // server_preferences.xml
     public static final String KEY_PROTOCOL                 = "protocol";
+    public static final String KEY_SMS_GATEWAY              = "sms_gateway";
+    public static final String KEY_SUBMISSION_TRANSPORT_TYPE = "submission_transport_type";
+    public static final String KEY_TRANSPORT_PREFERENCE      = "submission_transport_preference";
+    public static final String KEY_SMS_PREFERENCE            = "sms_preference";
 
     // user_interface_preferences.xml
+    public static final String KEY_APP_THEME                = "appTheme";
     public static final String KEY_APP_LANGUAGE             = "app_language";
     public static final String KEY_FONT_SIZE                = "font_size";
     public static final String KEY_NAVIGATION               = "navigation";
@@ -61,6 +70,7 @@ public final class PreferenceKeys {
 
 
     // other keys
+    public static final String ACTIVITY_LOGGER_ANALYTICS    = "activity_logger_event";
     public static final String KEY_LAST_VERSION             = "lastVersion";
     public static final String KEY_FIRST_RUN                = "firstRun";
     /** Whether any existing username and email values have been migrated to form metadata */
@@ -74,9 +84,10 @@ public final class PreferenceKeys {
     public static final String NAVIGATION_BUTTONS           = "buttons";
     private static final String GOOGLE_MAPS                 = "google_maps";
     private static final String AUTOSEND_OFF                = "off";
+    private static final String GUIDANCE_HINT_OFF           = "no";
     static final String GOOGLE_MAPS_BASEMAP_DEFAULT         = "streets";
     static final String OSM_BASEMAP_KEY                     = "osmdroid";
-    static final String OSM_MAPS_BASEMAP_DEFAULT            = "mapquest_streets";
+    static final String OSM_MAPS_BASEMAP_DEFAULT            = "openmap_streets";
 
     private static HashMap<String, Object> getHashMap() {
         HashMap<String, Object> hashMap = new HashMap<>();
@@ -85,12 +96,16 @@ public final class PreferenceKeys {
         hashMap.put(KEY_USERNAME,                   "");
         // form_management_preferences.xml
         hashMap.put(KEY_AUTOSEND,                   AUTOSEND_OFF);
+        hashMap.put(KEY_GUIDANCE_HINT,              GUIDANCE_HINT_OFF);
         hashMap.put(KEY_DELETE_AFTER_SEND,          false);
         hashMap.put(KEY_COMPLETED_DEFAULT,          true);
         hashMap.put(KEY_CONSTRAINT_BEHAVIOR,        CONSTRAINT_BEHAVIOR_ON_SWIPE);
         hashMap.put(KEY_HIGH_RESOLUTION,            true);
         hashMap.put(KEY_IMAGE_SIZE,                 "original_image_size");
         hashMap.put(KEY_INSTANCE_SYNC,              true);
+        hashMap.put(KEY_PERIODIC_FORM_UPDATES_CHECK, "never");
+        hashMap.put(KEY_AUTOMATIC_UPDATE,           false);
+        hashMap.put(KEY_HIDE_OLD_FORM_VERSIONS,     true);
         // form_metadata_preferences.xml
         hashMap.put(KEY_METADATA_USERNAME,          "");
         hashMap.put(KEY_METADATA_PHONENUMBER,       "");
@@ -105,7 +120,10 @@ public final class PreferenceKeys {
         hashMap.put(KEY_SUBMISSION_URL,             Collect.getInstance().getString(R.string.default_odk_submission));
         // server_preferences.xml
         hashMap.put(KEY_PROTOCOL,                   Collect.getInstance().getString(R.string.protocol_odk_default));
+        hashMap.put(KEY_SMS_GATEWAY,                "");
+        hashMap.put(KEY_SUBMISSION_TRANSPORT_TYPE,  Collect.getInstance().getString(R.string.transport_type_value_internet));
         // user_interface_preferences.xml
+        hashMap.put(KEY_APP_THEME,                  Collect.getInstance().getString(R.string.app_theme_light));
         hashMap.put(KEY_APP_LANGUAGE,               "");
         hashMap.put(KEY_FONT_SIZE,                  Collect.DEFAULT_FONTSIZE);
         hashMap.put(KEY_NAVIGATION,                 NAVIGATION_SWIPE);
@@ -113,8 +131,6 @@ public final class PreferenceKeys {
         hashMap.put(KEY_SPLASH_PATH,                Collect.getInstance().getString(R.string.default_splash_path));
         hashMap.put(KEY_MAP_SDK,                    GOOGLE_MAPS);
         hashMap.put(KEY_MAP_BASEMAP,                GOOGLE_MAPS_BASEMAP_DEFAULT);
-        // sync_preferences.xml
-        hashMap.put(KEY_ALLOW_FORM_SYNC,               true);
         return hashMap;
     }
 
@@ -123,7 +139,8 @@ public final class PreferenceKeys {
             KEY_FIRST_RUN,
             KEY_METADATA_MIGRATED,
             KEY_AUTOSEND_WIFI,
-            KEY_AUTOSEND_NETWORK
+            KEY_AUTOSEND_NETWORK,
+            ACTIVITY_LOGGER_ANALYTICS
     );
 
     public static final HashMap<String, Object> GENERAL_KEYS = getHashMap();

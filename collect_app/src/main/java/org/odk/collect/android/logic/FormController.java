@@ -36,7 +36,9 @@ import org.javarosa.core.services.transport.payload.ByteArrayPayload;
 import org.javarosa.core.util.JavaRosaCoreModule;
 import org.javarosa.form.api.FormEntryCaption;
 import org.javarosa.form.api.FormEntryController;
+import org.javarosa.form.api.FormEntryModel;
 import org.javarosa.form.api.FormEntryPrompt;
+import org.javarosa.model.xform.CompactSerializingVisitor;
 import org.javarosa.model.xform.XFormSerializingVisitor;
 import org.javarosa.model.xform.XFormsModule;
 import org.javarosa.model.xform.XPathReference;
@@ -65,14 +67,13 @@ import timber.log.Timber;
  */
 public class FormController {
 
-
     public static final boolean STEP_INTO_GROUP = true;
     public static final boolean STEP_OVER_GROUP = false;
 
     /**
      * OpenRosa metadata tag names.
      */
-    private static final String INSTANCE_ID = "instanceID";
+    public static final String INSTANCE_ID = "instanceID";
     private static final String INSTANCE_NAME = "instanceName";
 
     /*
@@ -88,7 +89,7 @@ public class FormController {
 
     /**
      * OpenRosa metadata of a form instance.
-     *
+     * <p>
      * Contains the values for the required metadata
      * fields and nothing else.
      *
@@ -106,7 +107,7 @@ public class FormController {
         }
     }
 
-    private static boolean isJavaRosaInitialized = false;
+    private static boolean isJavaRosaInitialized;
 
     /**
      * Isolate the initialization of JavaRosa into one method, called first
@@ -128,16 +129,16 @@ public class FormController {
                 .setPropertyManager(mgr);
     }
 
-    private File mediaFolder;
+    private final File mediaFolder;
     @Nullable
-    private File instancePath;
-    private FormEntryController formEntryController;
-    private FormIndex indexWaitingForData = null;
+    private File instanceFile;
+    private final FormEntryController formEntryController;
+    private FormIndex indexWaitingForData;
 
-    public FormController(File mediaFolder, FormEntryController fec, File instancePath) {
+    public FormController(File mediaFolder, FormEntryController fec, File instanceFile) {
         this.mediaFolder = mediaFolder;
         formEntryController = fec;
-        this.instancePath = instancePath;
+        this.instanceFile = instanceFile;
     }
 
     public FormDef getFormDef() {
@@ -149,12 +150,12 @@ public class FormController {
     }
 
     @Nullable
-    public File getInstancePath() {
-        return instancePath;
+    public File getInstanceFile() {
+        return instanceFile;
     }
 
-    public void setInstancePath(File instancePath) {
-        this.instancePath = instancePath;
+    public void setInstanceFile(File instanceFile) {
+        this.instanceFile = instanceFile;
     }
 
     public void setIndexWaitingForData(FormIndex index) {
@@ -167,7 +168,7 @@ public class FormController {
 
     public TimerLogger getTimerLogger() {
         if (timerLogger == null) {
-            setTimerLogger(new TimerLogger(getInstancePath(), this));
+            setTimerLogger(new TimerLogger(getInstanceFile(), this));
         }
         return timerLogger;
     }
@@ -252,7 +253,6 @@ public class FormController {
         return formEntryController.getModel().getEvent();
     }
 
-
     /**
      * returns the event for the given FormIndex.
      */
@@ -260,14 +260,12 @@ public class FormController {
         return formEntryController.getModel().getEvent(index);
     }
 
-
     /**
      * @return current FormIndex.
      */
     public FormIndex getFormIndex() {
         return formEntryController.getModel().getFormIndex();
     }
-
 
     /**
      * Return the langauges supported by the currently loaded form.
@@ -278,14 +276,12 @@ public class FormController {
         return formEntryController.getModel().getLanguages();
     }
 
-
     /**
      * @return A String containing the title of the current form.
      */
     public String getFormTitle() {
         return formEntryController.getModel().getFormTitle();
     }
-
 
     /**
      * @return the currently selected language.
@@ -329,14 +325,12 @@ public class FormController {
         return formEntryController.getModel().getCaptionPrompt(index);
     }
 
-
     /**
      * Return the caption for the current FormIndex. This is usually used for a repeat prompt.
      */
     public FormEntryCaption getCaptionPrompt() {
         return formEntryController.getModel().getCaptionPrompt();
     }
-
 
     /**
      * This fires off the jr:preload actions and events to save values like the
@@ -346,14 +340,12 @@ public class FormController {
         return formEntryController.getModel().getForm().postProcessInstance();
     }
 
-
     /**
      * TODO: We need a good description of what this does, exactly, and why.
      */
     private FormInstance getInstance() {
         return formEntryController.getModel().getForm().getInstance();
     }
-
 
     /**
      * A convenience method for determining if the current FormIndex is in a group that is/should
@@ -388,7 +380,7 @@ public class FormController {
      *
      * @return true if index is in a "field-list". False otherwise.
      */
-    private boolean indexIsInFieldList(FormIndex index) {
+    public boolean indexIsInFieldList(FormIndex index) {
         int event = getEvent(index);
         if (event == FormEntryController.EVENT_QUESTION) {
             // caption[0..len-1]
@@ -399,8 +391,13 @@ public class FormController {
                 // no group
                 return false;
             }
-            FormEntryCaption grp = captions[captions.length - 2];
-            return groupIsFieldList(grp.getIndex());
+            // If at least one of the groups you are inside is a field list, your index is in a field list
+            for (FormEntryCaption caption : captions) {
+                if (groupIsFieldList(caption.getIndex())) {
+                    return true;
+                }
+            }
+            return false;
         } else if (event == FormEntryController.EVENT_GROUP) {
             return groupIsFieldList(index);
         } else if (event == FormEntryController.EVENT_REPEAT) {
@@ -429,11 +426,17 @@ public class FormController {
                 && indexIsInFieldList()));
     }
 
-    public boolean isCurrentQuestionFirstInForm() throws JavaRosaException {
+    public boolean isCurrentQuestionFirstInForm() {
+        boolean isFirstQuestion = true;
         FormIndex originalFormIndex = getFormIndex();
-        boolean firstQuestion = (stepToPreviousScreenEvent() == FormEntryController.EVENT_BEGINNING_OF_FORM);
+        try {
+            isFirstQuestion = stepToPreviousScreenEvent() == FormEntryController.EVENT_BEGINNING_OF_FORM
+                    && stepToNextScreenEvent() != FormEntryController.EVENT_PROMPT_NEW_REPEAT;
+        } catch (JavaRosaException e) {
+            Timber.d(e);
+        }
         jumpToIndex(originalFormIndex);
-        return firstQuestion;
+        return isFirstQuestion;
     }
 
     /**
@@ -459,11 +462,13 @@ public class FormController {
         ValidateOutcome outcome = getFormDef().validate(markCompleted);
         if (outcome != null) {
             this.jumpToIndex(outcome.failedPrompt);
+            if (indexIsInFieldList()) {
+                stepToPreviousScreenEvent();
+            }
             return outcome.outcome;
         }
         return FormEntryController.ANSWER_OK;
     }
-
 
     /**
      * saveAnswer attempts to save the current answer into the data model without doing any
@@ -481,7 +486,6 @@ public class FormController {
         }
     }
 
-
     /**
      * Navigates forward in the form.
      *
@@ -497,27 +501,18 @@ public class FormController {
         }
     }
 
-
     /**
      * If using a view like HierarchyView that doesn't support multi-question per screen, step over
      * the group represented by the FormIndex.
      */
     private int stepOverGroup() {
-        ArrayList<FormIndex> indicies = new ArrayList<FormIndex>();
         GroupDef gd =
                 (GroupDef) formEntryController.getModel().getForm()
                         .getChild(getFormIndex());
-        FormIndex idxChild =
-                formEntryController.getModel().incrementIndex(
-                        getFormIndex(), true); // descend into group
-        for (int i = 0; i < gd.getChildren().size(); i++) {
-            indicies.add(idxChild);
-            // don't descend
-            idxChild = formEntryController.getModel().incrementIndex(idxChild, false);
-        }
+        List<FormIndex> indices = getIndicesForGroup(gd);
 
         // jump to the end of the group
-        formEntryController.jumpToIndex(indicies.get(indicies.size() - 1));
+        formEntryController.jumpToIndex(indices.get(indices.size() - 1));
         return stepToNextEvent(STEP_OVER_GROUP);
     }
 
@@ -551,16 +546,12 @@ public class FormController {
                         || event == FormEntryController.EVENT_PROMPT_NEW_REPEAT
                         || (event == FormEntryController.EVENT_QUESTION && indexIsInFieldList())
                         || ((event == FormEntryController.EVENT_GROUP
-                                || event == FormEntryController.EVENT_REPEAT)
-                                && !indexIsInFieldList())) {
+                        || event == FormEntryController.EVENT_REPEAT)
+                        && !indexIsInFieldList())) {
                     event = stepToPreviousEvent();
                 }
 
-                // Work-around for broken field-list handling from 1.1.7 which breaks either
-                // build-generated forms or XLSForm-generated forms.  If the current group
-                // is a GROUP with field-list and it is nested within a group or repeat with just
-                // this containing group, and that is also a field-list, then return the parent
-                // group.
+                // Handle nested field-list group
                 if (getEvent() == FormEntryController.EVENT_GROUP) {
                     FormIndex currentIndex = getFormIndex();
                     IFormElement element = formEntryController.getModel().getForm().getChild(
@@ -568,15 +559,12 @@ public class FormController {
                     if (element instanceof GroupDef) {
                         GroupDef gd = (GroupDef) element;
                         if (ODKView.FIELD_LIST.equalsIgnoreCase(gd.getAppearanceAttr())) {
-                            // OK this group is a field-list... see what the parent is...
+                            // jump to outermost containing field-list
                             FormEntryCaption[] fclist = this.getCaptionHierarchy(currentIndex);
-                            if (fclist.length > 1) {
-                                FormEntryCaption fc = fclist[fclist.length - 2];
-                                GroupDef pd = (GroupDef) fc.getFormElement();
-                                if (pd.getChildren().size() == 1
-                                        && ODKView.FIELD_LIST.equalsIgnoreCase(
-                                                pd.getAppearanceAttr())) {
-                                    formEntryController.jumpToIndex(fc.getIndex());
+                            for (FormEntryCaption caption : fclist) {
+                                if (groupIsFieldList(caption.getIndex())) {
+                                    formEntryController.jumpToIndex(caption.getIndex());
+                                    break;
                                 }
                             }
                         }
@@ -622,7 +610,7 @@ public class FormController {
                             break;
                         default:
                             Timber.w("JavaRosa added a new EVENT type and didn't tell us... shame "
-                                            + "on them.");
+                                    + "on them.");
                             break;
                     }
                 } while (event != FormEntryController.EVENT_END_OF_FORM);
@@ -632,7 +620,6 @@ public class FormController {
             throw new JavaRosaException(e);
         }
     }
-
 
     /**
      * Move the current form index to the index of the first enclosing repeat
@@ -668,7 +655,6 @@ public class FormController {
         }
         return getEvent();
     }
-
 
     public static class FailedConstraint {
         public final FormIndex index;
@@ -707,7 +693,6 @@ public class FormController {
         }
         return null;
     }
-
 
     /**
      * Navigates backward in the form.
@@ -768,7 +753,6 @@ public class FormController {
 
     }
 
-
     /**
      * Jumps to a given FormIndex.
      *
@@ -778,14 +762,12 @@ public class FormController {
         return formEntryController.jumpToIndex(index);
     }
 
-
     /**
      * Creates a new repeated instance of the group referenced by the current FormIndex.
      */
     public void newRepeat() {
         formEntryController.newRepeat();
     }
-
 
     /**
      * If the current FormIndex is within a repeated group, will find the innermost repeat, delete
@@ -798,7 +780,6 @@ public class FormController {
         formEntryController.jumpToIndex(fi);
     }
 
-
     /**
      * Sets the current language.
      */
@@ -806,62 +787,26 @@ public class FormController {
         formEntryController.setLanguage(language);
     }
 
-
     /**
      * Returns an array of question promps.
      */
     public FormEntryPrompt[] getQuestionPrompts() throws RuntimeException {
-
-        ArrayList<FormIndex> indicies = new ArrayList<FormIndex>();
-        FormIndex currentIndex = getFormIndex();
-
         // For questions, there is only one.
         // For groups, there could be many, but we set that below
         FormEntryPrompt[] questions = new FormEntryPrompt[1];
 
-        IFormElement element = formEntryController.getModel().getForm().getChild(currentIndex);
+        IFormElement element = formEntryController.getModel().getForm().getChild(getFormIndex());
         if (element instanceof GroupDef) {
             GroupDef gd = (GroupDef) element;
-            // descend into group
-            FormIndex idxChild = formEntryController.getModel().incrementIndex(currentIndex, true);
-
-            if (gd.getChildren().size() == 1 && getEvent(idxChild)
-                    == FormEntryController.EVENT_GROUP) {
-                // if we have a group definition within a field-list attribute group, and this is
-                // the
-                // only child in the group, check to see if it is also a field-list appearance.
-                // If it is, then silently recurse into it to pick up its elements.
-                // Work-around for the inconsistent treatment of field-list groups and repeats in
-                // 1.1.7 that
-                // either breaks forms generated by build or breaks forms generated by XLSForm.
-                IFormElement nestedElement = formEntryController.getModel().getForm().getChild(
-                        idxChild);
-                if (nestedElement instanceof GroupDef) {
-                    GroupDef nestedGd = (GroupDef) nestedElement;
-                    if (ODKView.FIELD_LIST.equalsIgnoreCase(nestedGd.getAppearanceAttr())) {
-                        gd = nestedGd;
-                        idxChild = formEntryController.getModel().incrementIndex(idxChild, true);
-                    }
-                }
-            }
-
-            for (int i = 0; i < gd.getChildren().size(); i++) {
-                indicies.add(idxChild);
-                // don't descend
-                idxChild = formEntryController.getModel().incrementIndex(idxChild, false);
-            }
-
             // we only display relevant questions
-            ArrayList<FormEntryPrompt> questionList = new ArrayList<FormEntryPrompt>();
-            for (int i = 0; i < indicies.size(); i++) {
-                FormIndex index = indicies.get(i);
-
+            List<FormEntryPrompt> questionList = new ArrayList<>();
+            for (FormIndex index : getIndicesForGroup(gd)) {
                 if (getEvent(index) != FormEntryController.EVENT_QUESTION) {
                     String errorMsg =
-                            "Only questions are allowed in 'field-list'.  Bad node is: "
+                            "Only questions and regular groups are allowed in 'field-list'.  Bad node is: "
                                     + index.getReference().toString(false);
                     RuntimeException e = new RuntimeException(errorMsg);
-                    Timber.e(errorMsg);
+                    Timber.w(errorMsg);
                     throw e;
                 }
 
@@ -873,18 +818,43 @@ public class FormController {
                 questionList.toArray(questions);
             }
         } else {
-            // We have a quesion, so just get the one prompt
+            // We have a question, so just get the one prompt
             questions[0] = getQuestionPrompt();
         }
 
         return questions;
     }
 
+    /**
+     * Recursively gets all indices contained in this group and its children
+     */
+    private List<FormIndex> getIndicesForGroup(GroupDef gd) {
+        return getIndicesForGroup(gd,
+                formEntryController.getModel().incrementIndex(getFormIndex(), true));
+    }
+
+    private List<FormIndex> getIndicesForGroup(GroupDef gd, FormIndex currentChildIndex) {
+        List<FormIndex> indices = new ArrayList<>();
+        for (int i = 0; i < gd.getChildren().size(); i++) {
+            final FormEntryModel formEntryModel = formEntryController.getModel();
+            if (getEvent(currentChildIndex) == FormEntryController.EVENT_GROUP) {
+                IFormElement nestedElement = formEntryModel.getForm().getChild(currentChildIndex);
+                if (nestedElement instanceof GroupDef) {
+                    indices.addAll(getIndicesForGroup((GroupDef) nestedElement,
+                            formEntryModel.incrementIndex(currentChildIndex, true)));
+                    currentChildIndex = formEntryModel.incrementIndex(currentChildIndex, false);
+                }
+            } else {
+                indices.add(currentChildIndex);
+                currentChildIndex = formEntryModel.incrementIndex(currentChildIndex, false);
+            }
+        }
+        return indices;
+    }
 
     public FormEntryPrompt getQuestionPrompt(FormIndex index) {
         return formEntryController.getModel().getQuestionPrompt(index);
     }
-
 
     public FormEntryPrompt getQuestionPrompt() {
         return formEntryController.getModel().getQuestionPrompt();
@@ -962,7 +932,6 @@ public class FormController {
         return groups;
     }
 
-
     /**
      * This is used to enable/disable the "Delete Repeat" menu option.
      */
@@ -978,7 +947,6 @@ public class FormController {
         }
         return false;
     }
-
 
     /**
      * The count of the closest group that repeats or -1.
@@ -996,7 +964,6 @@ public class FormController {
         return -1;
     }
 
-
     /**
      * The name of the closest group that repeats or null.
      */
@@ -1013,7 +980,6 @@ public class FormController {
         return null;
     }
 
-
     /**
      * The closest group the prompt belongs to.
      *
@@ -1028,7 +994,6 @@ public class FormController {
         }
     }
 
-
     /**
      * The repeat count of closest group the prompt belongs to.
      */
@@ -1039,7 +1004,6 @@ public class FormController {
         return -1;
 
     }
-
 
     /**
      * The text of closest group the prompt belongs to.
@@ -1181,6 +1145,19 @@ public class FormController {
         }
 
         return new InstanceMetadata(instanceId, instanceName, audit);
+    }
+
+    /**
+     * Constructs the SMS payload for a filled-in form instance. This payload
+     * does not enable a filled-in form to be re-opened and edited.
+     *
+     * @return ByteArrayPayload this can be converted back to a string when necessary.
+     * @throws IOException for some reason any error took place during serialization.
+     */
+    public ByteArrayPayload getFilledInFormSMS() throws IOException {
+        FormInstance dataModel = getInstance();
+        CompactSerializingVisitor serializer = new CompactSerializingVisitor();
+        return (ByteArrayPayload) serializer.createSerializedPayload(dataModel);
     }
 
 }

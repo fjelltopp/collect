@@ -18,8 +18,6 @@ package org.odk.collect.android.widgets;
 
 import android.content.Context;
 import android.media.MediaPlayer;
-import android.view.inputmethod.InputMethodManager;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -39,22 +37,13 @@ public abstract class SelectWidget extends QuestionWidget {
     protected List<SelectChoice> items;
     protected ArrayList<MediaLayout> playList;
     protected LinearLayout answerLayout;
-    private int playcounter = 0;
+    private int playcounter;
 
     public SelectWidget(Context context, FormEntryPrompt prompt) {
         super(context, prompt);
         answerLayout = new LinearLayout(context);
         answerLayout.setOrientation(LinearLayout.VERTICAL);
         playList = new ArrayList<>();
-
-        // SurveyCTO-added support for dynamic select content (from .csv files)
-        XPathFuncExpr xpathFuncExpr = ExternalDataUtil.getSearchXPathExpression(
-                prompt.getAppearanceHint());
-        if (xpathFuncExpr != null) {
-            items = ExternalDataUtil.populateExternalChoices(prompt, xpathFuncExpr);
-        } else {
-            items = prompt.getSelectChoices();
-        }
     }
 
     @Override
@@ -67,12 +56,6 @@ public abstract class SelectWidget extends QuestionWidget {
     }
 
     @Override
-    public void setFocus(Context context) {
-        InputMethodManager inputManager = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-        inputManager.hideSoftInputFromWindow(this.getWindowToken(), 0);
-    }
-
-    @Override
     public void setOnLongClickListener(OnLongClickListener l) {
     }
 
@@ -81,6 +64,14 @@ public abstract class SelectWidget extends QuestionWidget {
         super.resetQuestionTextColor();
         for (MediaLayout layout : playList) {
             layout.resetTextFormatting();
+        }
+    }
+
+    @Override
+    public void resetAudioButtonImage() {
+        super.resetAudioButtonImage();
+        for (MediaLayout layout : playList) {
+            layout.resetAudioButtonBitmap();
         }
     }
 
@@ -99,6 +90,16 @@ public abstract class SelectWidget extends QuestionWidget {
         });
         // plays the question text
         super.playAllPromptText();
+    }
+
+    protected void readItems() {
+        // SurveyCTO-added support for dynamic select content (from .csv files)
+        XPathFuncExpr xpathFuncExpr = ExternalDataUtil.getSearchXPathExpression(getFormEntryPrompt().getAppearanceHint());
+        if (xpathFuncExpr != null) {
+            items = ExternalDataUtil.populateExternalChoices(getFormEntryPrompt(), xpathFuncExpr);
+        } else {
+            items = getFormEntryPrompt().getSelectChoices();
+        }
     }
 
     private void playNextSelectItem() {
@@ -139,19 +140,15 @@ public abstract class SelectWidget extends QuestionWidget {
         String videoURI = getFormEntryPrompt().getSpecialFormSelectChoiceText(items.get(index), "video");
         String bigImageURI = getFormEntryPrompt().getSpecialFormSelectChoiceText(items.get(index), "big-image");
 
-        MediaLayout mediaLayout = new MediaLayout(getContext(), getPlayer());
+        MediaLayout mediaLayout = new MediaLayout(getContext());
         mediaLayout.setAVT(getFormEntryPrompt().getIndex(), "." + Integer.toString(index), textView, audioURI,
-                imageURI, videoURI, bigImageURI);
-
+                imageURI, videoURI, bigImageURI, getPlayer());
         mediaLayout.setAudioListener(this);
         mediaLayout.setPlayTextColor(getPlayColor());
-        mediaLayout.setPlayTextBackgroundColor(getPlayBackgroundColor());
         playList.add(mediaLayout);
 
         if (index != items.size() - 1) {
-            ImageView divider = new ImageView(getContext());
-            divider.setBackgroundResource(android.R.drawable.divider_horizontal_bright);
-            mediaLayout.addDivider(divider);
+            mediaLayout.addDivider();
         }
 
         return mediaLayout;

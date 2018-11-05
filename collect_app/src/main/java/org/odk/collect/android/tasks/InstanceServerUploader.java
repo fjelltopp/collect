@@ -21,6 +21,8 @@ import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.webkit.MimeTypeMap;
 
+import com.google.android.gms.analytics.HitBuilders;
+
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.dao.InstancesDao;
@@ -53,6 +55,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
@@ -112,7 +115,7 @@ public class InstanceServerUploader extends InstanceUploader {
 
     // it can take up to 27 seconds to spin up Aggregate
     private static final int CONNECTION_TIMEOUT = 60000;
-    private static final String fail = "Error: ";
+    private static final String FAIL = "Error: ";
     private static final String URL_PATH_SEP = "/";
 
     /**
@@ -153,7 +156,7 @@ public class InstanceServerUploader extends InstanceUploader {
         } else {
             if (submissionUri.getHost() == null) {
                 Timber.i("Host name may not be null");
-                outcome.results.put(id, fail + "Host name may not be null");
+                outcome.messagesByInstanceId.put(id, FAIL + "Host name may not be null");
                 cv.put(InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
                 Collect.getInstance().getContentResolver().update(toUpdate, cv, null, null);
                 return true;
@@ -164,10 +167,19 @@ public class InstanceServerUploader extends InstanceUploader {
                 WebUtils.enablePreemptiveBasicAuth(localContext, submissionUri.getHost());
             }
 
+            URI uri;
+            try {
+                uri = URI.create(submissionUri.toString());
+            } catch (IllegalArgumentException e) {
+                Timber.i(e);
+                outcome.messagesByInstanceId.put(id, Collect.getInstance().getString(R.string.url_error));
+                return false;
+            }
+
             // Issue a head request to confirm the server is an OpenRosa server and see if auth
             // is required
             // http://docs.opendatakit.org/openrosa-form-submission/#extended-transmission-considerations
-            HttpHead httpHead = WebUtils.createOpenRosaHttpHead(submissionUri);
+            HttpHead httpHead = WebUtils.createOpenRosaHttpHead(uri);
 
             // prepare response
             final HttpResponse response;
@@ -196,14 +208,20 @@ public class InstanceServerUploader extends InstanceUploader {
                                 openRosaServer = true;
                                 // trust the server to tell us a new location
                                 // ... and possibly to use https instead.
+                                // Re-add params if server didn't respond with params
+                                if (newURI.getQuery() == null) {
+                                    newURI = newURI.buildUpon()
+                                            .encodedQuery(submissionUri.getEncodedQuery())
+                                            .build();
+                                }
                                 uriRemap.put(submissionUri, newURI);
                                 submissionUri = newURI;
                             } else {
                                 // Don't follow a redirection attempt to a different host.
                                 // We can't tell if this is a spoof or not.
-                                outcome.results.put(
+                                outcome.messagesByInstanceId.put(
                                         id,
-                                        fail
+                                        FAIL
                                                 + "Unexpected redirection attempt to a different "
                                                 + "host: "
                                                 + newURI.toString());
@@ -215,7 +233,7 @@ public class InstanceServerUploader extends InstanceUploader {
                             }
                         } catch (Exception e) {
                             Timber.e(e, "Exception thrown parsing URI for url %s", urlString);
-                            outcome.results.put(id, fail + urlString + " " + e.toString());
+                            outcome.messagesByInstanceId.put(id, FAIL + urlString + " " + e.toString());
                             cv.put(InstanceColumns.STATUS,
                                     InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
                             Collect.getInstance().getContentResolver()
@@ -230,9 +248,9 @@ public class InstanceServerUploader extends InstanceUploader {
                     Timber.w("Status code on Head request: %d", statusCode);
                     if (statusCode >= HttpStatus.SC_OK
                             && statusCode < HttpStatus.SC_MULTIPLE_CHOICES) {
-                        outcome.results.put(
+                        outcome.messagesByInstanceId.put(
                                 id,
-                                fail
+                                FAIL
                                         + "Invalid status code on Head request.  If you have a "
                                         + "web proxy, you may need to login to your network. ");
                         cv.put(InstanceColumns.STATUS,
@@ -244,19 +262,19 @@ public class InstanceServerUploader extends InstanceUploader {
                 }
             } catch (ClientProtocolException | ConnectTimeoutException | UnknownHostException | SocketTimeoutException | NoHttpResponseException | SocketException e) {
                 if (e instanceof ClientProtocolException) {
-                    outcome.results.put(id, fail + "Client Protocol Exception");
+                    outcome.messagesByInstanceId.put(id, FAIL + "Client Protocol Exception");
                     Timber.i(e, "Client Protocol Exception");
                 } else if (e instanceof ConnectTimeoutException) {
-                    outcome.results.put(id, fail + "Connection Timeout");
+                    outcome.messagesByInstanceId.put(id, FAIL + "Connection Timeout");
                     Timber.i(e, "Connection Timeout");
                 } else if (e instanceof UnknownHostException) {
-                    outcome.results.put(id, fail + e.toString() + " :: Network Connection Failed");
+                    outcome.messagesByInstanceId.put(id, FAIL + e.toString() + " :: Network Connection Failed");
                     Timber.i(e, "Network Connection Failed");
                 } else if (e instanceof SocketTimeoutException) {
-                    outcome.results.put(id, fail + "Connection Timeout");
+                    outcome.messagesByInstanceId.put(id, FAIL + "Connection Timeout");
                     Timber.i(e, "Connection timeout");
                 } else {
-                    outcome.results.put(id, fail + "Network Connection Refused");
+                    outcome.messagesByInstanceId.put(id, FAIL + "Network Connection Refused");
                     Timber.i(e, "Network Connection Refused");
                 }
                 cv.put(InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
@@ -267,7 +285,7 @@ public class InstanceServerUploader extends InstanceUploader {
                 if (msg == null) {
                     msg = e.toString();
                 }
-                outcome.results.put(id, fail + "Generic Exception: " + msg);
+                outcome.messagesByInstanceId.put(id, FAIL + "Generic Exception: " + msg);
                 Timber.e(e);
                 cv.put(InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
                 Collect.getInstance().getContentResolver().update(toUpdate, cv, null, null);
@@ -303,7 +321,7 @@ public class InstanceServerUploader extends InstanceUploader {
         }
 
         if (!instanceFile.exists() && !submissionFile.exists()) {
-            outcome.results.put(id, fail + "instance XML file does not exist!");
+            outcome.messagesByInstanceId.put(id, FAIL + "instance XML file does not exist!");
             cv.put(InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
             Collect.getInstance().getContentResolver().update(toUpdate, cv, null, null);
             return true;
@@ -426,18 +444,18 @@ public class InstanceServerUploader extends InstanceUploader {
                 if (responseCode != HttpStatus.SC_CREATED
                         && responseCode != HttpStatus.SC_ACCEPTED) {
                     if (responseCode == HttpStatus.SC_OK) {
-                        outcome.results.put(id, fail + "Network login failure? Again?");
+                        outcome.messagesByInstanceId.put(id, FAIL + "Network login failure? Again?");
                     } else if (responseCode == HttpStatus.SC_UNAUTHORIZED) {
                         // clear the cookies -- should not be necessary?
                         Collect.getInstance().getCookieStore().clear();
-                        outcome.results.put(id, fail + response.getStatusLine().getReasonPhrase()
+                        outcome.messagesByInstanceId.put(id, FAIL + response.getStatusLine().getReasonPhrase()
                                 + " (" + responseCode + ") at " + urlString);
                     } else {
                         // If response from server is valid use that else use default messaging
                         if (messageParser.isValid()) {
-                            outcome.results.put(id, fail + messageParser.getMessageResponse());
+                            outcome.messagesByInstanceId.put(id, FAIL + messageParser.getMessageResponse());
                         } else {
-                            outcome.results.put(id, fail + response.getStatusLine().getReasonPhrase()
+                            outcome.messagesByInstanceId.put(id, FAIL + response.getStatusLine().getReasonPhrase()
                                     + " (" + responseCode + ") at " + urlString);
                         }
 
@@ -460,7 +478,8 @@ public class InstanceServerUploader extends InstanceUploader {
                 if (msg == null) {
                     msg = e.toString();
                 }
-                outcome.results.put(id, fail + "Generic Exception: " + msg);
+                outcome.messagesByInstanceId.put(id, FAIL + "Generic Exception: " + msg);
+                cv.put(InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
                 cv.put(InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMISSION_FAILED);
                 Collect.getInstance().getContentResolver().update(toUpdate, cv, null, null);
                 return true;
@@ -469,14 +488,23 @@ public class InstanceServerUploader extends InstanceUploader {
 
         // If response from server is valid use that else use default messaging
         if (messageParser.isValid()) {
-            outcome.results.put(id, messageParser.getMessageResponse());
+            outcome.messagesByInstanceId.put(id, messageParser.getMessageResponse());
         } else {
             // Default messaging
-            outcome.results.put(id, Collect.getInstance().getString(R.string.success));
+            outcome.messagesByInstanceId.put(id, Collect.getInstance().getString(R.string.success));
         }
 
         cv.put(InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMITTED);
         Collect.getInstance().getContentResolver().update(toUpdate, cv, null, null);
+
+        /**
+          Collect.getInstance()
+                .getDefaultTracker()
+                .send(new HitBuilders.EventBuilder()
+                        .setCategory("Submission")
+                        .setAction("HTTP")
+                        .build());
+         */
         return true;
     }
 
@@ -490,13 +518,13 @@ public class InstanceServerUploader extends InstanceUploader {
         String[] selectionArgs = new String[high - low];
         for (int i = 0; i < (high - low); i++) {
             if (i > 0) {
-                selectionBuf.append(",");
+                selectionBuf.append(',');
             }
-            selectionBuf.append("?");
+            selectionBuf.append('?');
             selectionArgs[i] = values[i + low].toString();
         }
 
-        selectionBuf.append(")");
+        selectionBuf.append(')');
         String selection = selectionBuf.toString();
 
         String deviceId = new PropertyManager(Collect.getInstance().getApplicationContext())

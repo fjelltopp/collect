@@ -27,7 +27,6 @@ import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Button;
@@ -40,8 +39,10 @@ import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.StringData;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
+import org.odk.collect.android.activities.FormEntryActivity;
 import org.odk.collect.android.application.Collect;
-import org.odk.collect.android.utilities.MediaUtils;
+import org.odk.collect.android.listeners.PermissionListener;
+import org.odk.collect.android.utilities.MediaManager;
 import org.odk.collect.android.utilities.ViewIds;
 import org.odk.collect.android.widgets.interfaces.FileWidget;
 
@@ -51,6 +52,7 @@ import java.util.Date;
 import timber.log.Timber;
 
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
+import static org.odk.collect.android.utilities.PermissionUtils.requestCameraPermission;
 
 /**
  * Widget that allows user to take pictures, sounds or video and add them to the
@@ -62,15 +64,15 @@ import static org.odk.collect.android.utilities.ApplicationConstants.RequestCode
 @SuppressLint("ViewConstructor")
 public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
 
-    private Button captureButton;
-    private Button chooseButton;
+    private final Button captureButton;
+    private final Button chooseButton;
 
     @Nullable
     private WebView imageDisplay;
 
     private String binaryName;
 
-    private TextView errorTextView;
+    private final TextView errorTextView;
 
     public ImageWebViewWidget(Context context, FormEntryPrompt prompt) {
         super(context, prompt);
@@ -172,25 +174,17 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
             return true;
         }
 
-        // transits WebView
-        if (rect.contains((int) ((e1.getRawX() + e2.getRawX()) / 2.0),
-                (int) ((e1.getRawY() + e2.getRawY()) / 2.0))) {
-            return true;
-        }
-        // Log.i(t, "NOT SUPPRESSED");
-        return false;
+        return rect.contains((int) ((e1.getRawX() + e2.getRawX()) / 2.0),
+                (int) ((e1.getRawY() + e2.getRawY()) / 2.0));
     }
 
     @Override
     public void deleteFile() {
-        // get the file path and delete the file
-        String name = binaryName;
-        // clean up variables
+        MediaManager
+                .INSTANCE
+                .markOriginalFileOrDelete(getFormEntryPrompt().getIndex().toString(),
+                getInstanceFolder() + File.separator + binaryName);
         binaryName = null;
-        // delete from media provider
-        int del = MediaUtils.deleteImageFileFromMediaProvider(
-                getInstanceFolder() + File.separator + name);
-        Timber.i("Deleted %d rows from media content provider", del);
     }
 
     @Override
@@ -222,7 +216,6 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
         }
     }
 
-
     @Override
     public void setBinaryData(Object newImageObj) {
         // you are replacing an answer. delete the previous image using the
@@ -242,6 +235,10 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
             values.put(Images.Media.MIME_TYPE, "image/jpeg");
             values.put(Images.Media.DATA, newImage.getAbsolutePath());
 
+            MediaManager
+                    .INSTANCE
+                    .replaceRecentFileForQuestion(getFormEntryPrompt().getIndex().toString(), newImage.getAbsolutePath());
+
             Uri imageURI = getContext().getContentResolver().insert(
                     Images.Media.EXTERNAL_CONTENT_URI, values);
 
@@ -254,14 +251,6 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
         } else {
             Timber.e("NO IMAGE EXISTS at: %s", newImage.getAbsolutePath());
         }
-    }
-
-    @Override
-    public void setFocus(Context context) {
-        // Hide the soft keyboard if it's showing.
-        InputMethodManager inputManager = (InputMethodManager) context
-                .getSystemService(Context.INPUT_METHOD_SERVICE);
-        inputManager.hideSoftInputFromWindow(this.getWindowToken(), 0);
     }
 
     @Override
@@ -281,7 +270,16 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
     public void onButtonClick(int buttonId) {
         switch (buttonId) {
             case R.id.capture_image:
-                captureImage();
+                requestCameraPermission((FormEntryActivity) getContext(), new PermissionListener() {
+                    @Override
+                    public void granted() {
+                        captureImage();
+                    }
+
+                    @Override
+                    public void denied() {
+                    }
+                });
                 break;
             case R.id.choose_image:
                 chooseImage();
@@ -317,7 +315,7 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
             Toast.makeText(
                     getContext(),
                     getContext().getString(R.string.activity_not_found,
-                            "image capture"), Toast.LENGTH_SHORT)
+                            getContext().getString(R.string.capture_image)), Toast.LENGTH_SHORT)
                     .show();
             cancelWaitingForData();
         }
@@ -340,7 +338,7 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
             Toast.makeText(
                     getContext(),
                     getContext().getString(R.string.activity_not_found,
-                            "choose image"), Toast.LENGTH_SHORT).show();
+                            getContext().getString(R.string.choose_image)), Toast.LENGTH_SHORT).show();
             cancelWaitingForData();
         }
     }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- strings for Firebase Cloud Messaging -->
+    <string name="new_message">New message from administrator</string>
+</resources>
