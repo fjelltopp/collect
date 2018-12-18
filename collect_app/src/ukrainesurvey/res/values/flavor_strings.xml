@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ukraine Survey</string>
+    <string name="default_server_url">https://odk.whe-ukraine.org</string>
+    <string name="app_url">https://odk.whe-ukraine.org</string>
+    <string name="main_menu_details">Data Collection</string>
+</resources>

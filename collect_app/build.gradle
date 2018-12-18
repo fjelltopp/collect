@@ -160,6 +160,10 @@ android {
             dimension "PARTNER"
             applicationId "org.fjelltopp.collect.demo"
         }
+        ukrainesurvey {
+            dimension "PARTNER"
+            applicationId "org.fjelltopp.collect.ukrainesurvey"
+        }
 
     }
 

@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "653080734795",
+    "firebase_url": "https://fjelltopp-collect.firebaseio.com",
+    "project_id": "fjelltopp-collect",
+    "storage_bucket": "fjelltopp-collect.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:653080734795:android:8901d1e6c1591fca",
+        "android_client_info": {
+          "package_name": "org.fjelltopp.collect.ukrainesurvey"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "653080734795-siqm6u1p8425jcu86gfhs0l4i5atr722.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPN66USM7wPgDgM66fu1WfPiBuNCe8aSg"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
