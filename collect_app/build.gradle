@@ -4,7 +4,7 @@ apply from: '../config/quality.gradle'
 apply from: '../config/jacoco.gradle'
 import com.android.ddmlib.DdmPreferences
 
-// Check for flacour configs from a separate infra repository
+// Check for flavour configs from a separate infra repository
 if (file('../../collect_infra/flavor_configs.gradle').exists()) {
     apply from: '../../collect_infra/flavor_configs.gradle'
 }
