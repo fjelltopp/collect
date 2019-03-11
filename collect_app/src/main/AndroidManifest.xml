@@ -43,10 +43,6 @@ the specific language governing permissions and limitations under the License.
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <!-- Get permission for SyncAdapter functions. -->
-    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS"/>
-    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS"/>
-    <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS"/>
     <uses-permission
         android:name="android.permission.USE_CREDENTIALS"
         android:maxSdkVersion="22" />
@@ -101,11 +97,6 @@ the specific language governing permissions and limitations under the License.
         <provider
             android:name=".provider.InstanceProvider"
             android:authorities="${applicationId}.provider.odk.instances"
-            android:exported="true" />
-        <provider
-            android:name=".provider.SyncProvider"
-            android:authorities="${applicationId}.provider.odk.sync"
-            android:syncable="true"
             android:exported="true" />
         <provider
             android:name="android.support.v4.content.FileProvider"
@@ -276,25 +267,6 @@ the specific language governing permissions and limitations under the License.
             android:enabled="true"
             android:exported="false" />
         <!-- ... -->
-
-        <service
-            android:name="org.odk.collect.android.syncadapter.AuthenticatorService">
-            <intent-filter>
-                <action android:name="android.accounts.AccountAuthenticator"/>
-            </intent-filter>
-            <meta-data
-                android:name="android.accounts.AccountAuthenticator"
-                android:resource="@xml/sync_authenticator" />
-        </service>
-        <service
-            android:name="org.odk.collect.android.syncadapter.SyncService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.content.SyncAdapter"/>
-            </intent-filter>
-            <meta-data android:name="android.content.SyncAdapter"
-                android:resource="@xml/sync_service" />
-        </service>
         <service
             android:name="org.odk.collect.android.messaging.CollectFirebaseMessagingService">
             <intent-filter>

@@ -2,9 +2,12 @@ apply plugin: 'com.android.application'
 // apply plugin: 'io.fabric'
 apply from: '../config/quality.gradle'
 apply from: '../config/jacoco.gradle'
-
 import com.android.ddmlib.DdmPreferences
 
+// Check for flavour configs from a separate infra repository
+if (file('../../collect_infra/flavor_configs.gradle').exists()) {
+    apply from: '../../collect_infra/flavor_configs.gradle'
+}
 
 DdmPreferences.setTimeOut(60000)
 
@@ -128,39 +131,9 @@ android {
         }
     }
 
+
     flavorDimensions "PARTNER"
 
-    productFlavors {
-        nutrition {
-            dimension "PARTNER"
-            buildConfigField "String", "ODK_ROOT_FOLDER", "\"odk_nutrition\""
-            applicationId "org.odk.collect.android.nutrition"
-
-            buildConfigField "String", "CONTENT_TYPE", "vnd.android.cursor.dir/vnd.odk.form.nutrition"
-            buildConfigField "String", "CONTENT_ITEM_TYPE", "vnd.android.cursor.item/vnd.odk.form.nutrition"
-
-            buildConfigField "String", "CONTENT_TYPE", "\"vnd.android.cursor.dir/vnd.odk.form.nutrition\""
-            buildConfigField "String", "CONTENT_ITEM_TYPE", "\"vnd.android.cursor.item/vnd.odk.form.nutrition\""
-            buildConfigField "String", "INSTANCE_ITEM_TYPE", "\"vnd.android.cursor.item/vnd.odk.instance.nutrition\""
-            manifestPlaceholders = [contentType:"vnd.android.cursor.dir/vnd.odk.form.nutrition",
-                                    contentItemType:"vnd.android.cursor.item/vnd.odk.form.nutrition",
-                                    instanceItemType:"vnd.android.cursor.item/vnd.odk.instance.nutrition"]
-        }
-        somaliland {
-            dimension "PARTNER"
-        }
-        puntland {
-            dimension "PARTNER"
-        }
-        southcentral {
-            dimension "PARTNER"
-        }
-        demo {
-            dimension "PARTNER"
-            applicationId "org.fjelltopp.collect.demo"
-        }
-
-    }
 
     // https://stackoverflow.com/a/27119543/152938
     applicationVariants.all { variant ->
