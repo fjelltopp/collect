@@ -5,24 +5,24 @@
     android:layout_height="wrap_content">
 
     <LinearLayout
-        android:id="@+id/media_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
+        android:layout_toLeftOf="@id/audio_video_container"
+        android:layout_toStartOf="@id/audio_video_container"
         android:orientation="vertical">
 
         <FrameLayout
             android:id="@+id/select_container"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
         <ImageView
             android:id="@+id/imageView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="2px"
             android:scaleType="fitStart"
             android:visibility="gone" />
 
@@ -30,19 +30,18 @@
             android:id="@+id/missingImage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="10px"
+            android:padding="4dp"
             android:visibility="gone"
             tools:text="media missing" />
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/audio_video_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
-        android:layout_toEndOf="@id/media_container"
-        android:layout_toRightOf="@id/media_container"
         android:gravity="end"
         android:orientation="vertical">
 
@@ -66,6 +65,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:background="?divider"
+        android:background="?dividerCompat"
         android:visibility="gone" />
 </RelativeLayout>

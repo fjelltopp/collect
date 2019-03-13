@@ -27,16 +27,13 @@ import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.StringData;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
-import org.odk.collect.android.activities.FormEntryActivity;
-import org.odk.collect.android.activities.GeoShapeGoogleMapActivity;
-import org.odk.collect.android.activities.GeoShapeOsmMapActivity;
+import org.odk.collect.android.activities.GeoPolyActivity;
 import org.odk.collect.android.listeners.PermissionListener;
-import org.odk.collect.android.preferences.PreferenceKeys;
+import org.odk.collect.android.preferences.GeneralKeys;
 import org.odk.collect.android.utilities.PlayServicesUtil;
 import org.odk.collect.android.widgets.interfaces.BinaryWidget;
 
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
-import static org.odk.collect.android.utilities.PermissionUtils.requestLocationPermissions;
 
 /**
  * GeoShapeWidget is the widget that allows the user to get Collect multiple GPS points.
@@ -58,15 +55,11 @@ public class GeoShapeWidget extends QuestionWidget implements BinaryWidget {
         // assemble the widget...
 
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
-        mapSDK = sharedPreferences.getString(PreferenceKeys.KEY_MAP_SDK, GOOGLE_MAP_KEY);
+        mapSDK = sharedPreferences.getString(GeneralKeys.KEY_MAP_SDK, GOOGLE_MAP_KEY);
 
         answerDisplay = getCenteredAnswerTextView();
 
         createShapeButton = getSimpleButton(getContext().getString(R.string.get_shape));
-
-        if (prompt.isReadOnly()) {
-            createShapeButton.setEnabled(false);
-        }
 
         LinearLayout answerLayout = new LinearLayout(getContext());
         answerLayout.setOrientation(LinearLayout.VERTICAL);
@@ -85,22 +78,15 @@ public class GeoShapeWidget extends QuestionWidget implements BinaryWidget {
     }
 
     private void startGeoShapeActivity() {
-        Intent i;
-        if (mapSDK.equals(GOOGLE_MAP_KEY)) {
-            if (PlayServicesUtil.isGooglePlayServicesAvailable(getContext())) {
-                i = new Intent(getContext(), GeoShapeGoogleMapActivity.class);
-            } else {
-                PlayServicesUtil.showGooglePlayServicesAvailabilityErrorDialog(getContext());
-                return;
-            }
-        } else {
-            i = new Intent(getContext(), GeoShapeOsmMapActivity.class);
+        if (mapSDK.equals(GOOGLE_MAP_KEY) && !PlayServicesUtil.isGooglePlayServicesAvailable(getContext())) {
+            PlayServicesUtil.showGooglePlayServicesAvailabilityErrorDialog(getContext());
+            return;
         }
-        String s = answerDisplay.getText().toString();
-        if (s.length() != 0) {
-            i.putExtra(SHAPE_LOCATION, s);
-        }
-        ((Activity) getContext()).startActivityForResult(i, RequestCodes.GEOSHAPE_CAPTURE);
+        Intent intent = new Intent(getContext(), GeoPolyActivity.class)
+            .putExtra(GeoPolyActivity.ANSWER_KEY, answerDisplay.getText().toString())
+            .putExtra(GeoPolyActivity.OUTPUT_MODE_KEY, GeoPolyActivity.OutputMode.GEOSHAPE)
+            .putExtra(GeneralKeys.KEY_MAP_SDK, mapSDK);
+        ((Activity) getContext()).startActivityForResult(intent, RequestCodes.GEOSHAPE_CAPTURE);
     }
 
     private void updateButtonLabelsAndVisibility(boolean dataAvailable) {
@@ -141,7 +127,7 @@ public class GeoShapeWidget extends QuestionWidget implements BinaryWidget {
 
     @Override
     public void onButtonClick(int buttonId) {
-        requestLocationPermissions((FormEntryActivity) getContext(), new PermissionListener() {
+        getPermissionUtils().requestLocationPermissions(new PermissionListener() {
             @Override
             public void granted() {
                 waitForData();

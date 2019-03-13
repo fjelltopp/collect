@@ -30,10 +30,12 @@ the specific language governing permissions and limitations under the License. -
     <string-array name="transport_type_entry_values" translatable="false">
         <item>@string/transport_type_value_internet</item>
         <item>@string/transport_type_value_sms</item>
+        <item>@string/transport_type_value_both</item>
     </string-array>
     <string-array name="transport_type_entries">
         <item>@string/transport_type_internet</item>
         <item>@string/transport_type_sms</item>
+        <item>@string/transport_type_both</item>
     </string-array>
 
     <!-- DO NOT alter font_size_entry_values - used internally in preferences activity -->
@@ -124,17 +126,6 @@ the specific language governing permissions and limitations under the License. -
         <item>@string/openmap_stamen_terrain</item>
         <item>@string/openmap_cartodb_positron</item>
         <item>@string/openmap_cartodb_darkmatter</item>
-    </string-array>
-    <string-array name="delay_scale" translatable="false">
-        <item>1</item>
-        <item>5</item>
-        <item>10</item>
-        <item>20</item>
-        <item>30</item>
-    </string-array>
-    <string-array name="time_scale" translatable="false">
-        <item>@string/seconds</item>
-        <item>@string/minutes</item>
     </string-array>
     <string-array name="autosend_selector_entries">
         <item>@string/off</item>

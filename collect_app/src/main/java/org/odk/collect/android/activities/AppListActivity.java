@@ -17,6 +17,7 @@
 package org.odk.collect.android.activities;
 
 import android.database.Cursor;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.LayoutRes;
@@ -40,7 +41,6 @@ import android.widget.ProgressBar;
 import org.odk.collect.android.R;
 import org.odk.collect.android.adapters.SortDialogAdapter;
 import org.odk.collect.android.application.Collect;
-import org.odk.collect.android.database.ActivityLogger;
 import org.odk.collect.android.listeners.RecyclerViewClickListener;
 import org.odk.collect.android.provider.InstanceProviderAPI;
 import org.odk.collect.android.utilities.SnackbarUtils;
@@ -60,7 +60,6 @@ abstract class AppListActivity extends CollectAbstractActivity {
     private static final String IS_BOTTOM_DIALOG_SHOWN = "isBottomDialogShown";
     private static final String SEARCH_TEXT = "searchText";
 
-    protected final ActivityLogger logger = Collect.getInstance().getActivityLogger();
     protected CursorAdapter listAdapter;
     protected LinkedHashSet<Long> selectedInstances = new LinkedHashSet<>();
     protected String[] sortingOptions;
@@ -128,6 +127,12 @@ abstract class AppListActivity extends CollectAbstractActivity {
         listView.setEmptyView(findViewById(android.R.id.empty));
         progressBar = findViewById(R.id.progressBar);
         llParent = findViewById(R.id.llParent);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Use the nicer-looking drawable with Material Design insets.
+            listView.setDivider(getResources().getDrawable(R.drawable.list_item_divider, getTheme()));
+            listView.setDividerHeight(1);
+        }
 
         setSupportActionBar(findViewById(R.id.toolbar));
     }
@@ -316,7 +321,7 @@ abstract class AppListActivity extends CollectAbstractActivity {
     }
 
     protected void showSnackbar(@NonNull String result) {
-        SnackbarUtils.showSnackbar(llParent, result);
+        SnackbarUtils.showShortSnackbar(llParent, result);
     }
 
     protected void hideProgressBarIfAllowed() {

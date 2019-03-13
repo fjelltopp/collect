@@ -31,6 +31,8 @@ import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.Toast;
 
+import com.google.android.gms.analytics.HitBuilders;
+
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.StringData;
 import org.javarosa.form.api.FormEntryPrompt;
@@ -51,6 +53,7 @@ import java.util.Map;
 
 import timber.log.Timber;
 
+import static android.content.Intent.ACTION_SENDTO;
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
 
 /**
@@ -107,6 +110,7 @@ public class ExStringWidget extends QuestionWidget implements BinaryWidget {
     private ActivityAvailability activityAvailability;
 
     public ExStringWidget(Context context, FormEntryPrompt prompt) {
+
         super(context, prompt);
 
         TableLayout.LayoutParams params = new TableLayout.LayoutParams();
@@ -142,7 +146,6 @@ public class ExStringWidget extends QuestionWidget implements BinaryWidget {
         String buttonText = (v != null) ? v : context.getString(R.string.launch_app);
 
         launchIntentButton = getSimpleButton(buttonText);
-        launchIntentButton.setEnabled(!getFormEntryPrompt().isReadOnly());
 
         // finish complex layout
         LinearLayout answerLayout = new LinearLayout(getContext());
@@ -150,14 +153,19 @@ public class ExStringWidget extends QuestionWidget implements BinaryWidget {
         answerLayout.addView(launchIntentButton);
         answerLayout.addView(answer);
         addAnswerView(answerLayout);
+
+        Collect.getInstance().getDefaultTracker()
+                .send(new HitBuilders.EventBuilder()
+                        .setCategory("WidgetType")
+                        .setAction("ExternalApp")
+                        .setLabel(Collect.getCurrentFormIdentifierHash())
+                        .build());
+
     }
 
     protected void fireActivity(Intent i) throws ActivityNotFoundException {
         i.putExtra("value", getFormEntryPrompt().getAnswerText());
-        Collect.getInstance().getActivityLogger().logInstanceAction(this, "launchIntent",
-                i.getAction(), getFormEntryPrompt().getIndex());
-        ((Activity) getContext()).startActivityForResult(i,
-                RequestCodes.EX_STRING_CAPTURE);
+        ((Activity) getContext()).startActivityForResult(i, RequestCodes.EX_STRING_CAPTURE);
     }
 
     @Override
@@ -267,8 +275,12 @@ public class ExStringWidget extends QuestionWidget implements BinaryWidget {
                         getFormEntryPrompt().getIndex().getReference());
 
                 waitForData();
-                fireActivity(i);
-
+                // ACTION_SENDTO used for sending text messages or emails doesn't require any results
+                if (ACTION_SENDTO.equals(i.getAction())) {
+                    getContext().startActivity(i);
+                } else {
+                    fireActivity(i);
+                }
             } catch (ExternalParamsException | ActivityNotFoundException e) {
                 Timber.d(e);
                 onException(e.getMessage());

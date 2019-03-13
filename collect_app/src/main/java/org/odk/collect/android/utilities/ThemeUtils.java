@@ -25,7 +25,7 @@ import android.util.TypedValue;
 
 import org.odk.collect.android.R;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
-import org.odk.collect.android.preferences.PreferenceKeys;
+import org.odk.collect.android.preferences.GeneralKeys;
 
 public final class ThemeUtils {
 
@@ -38,6 +38,11 @@ public final class ThemeUtils {
     @StyleRes
     public int getAppTheme() {
         return isDarkTheme() ? R.style.DarkAppTheme : R.style.LightAppTheme;
+    }
+
+    @StyleRes
+    public int getFormEntryActivityTheme() {
+        return isDarkTheme() ? R.style.FormEntryActivityDarkTheme : R.style.FormEntryActivityLightTheme;
     }
 
     @StyleRes
@@ -86,7 +91,7 @@ public final class ThemeUtils {
     }
 
     public boolean isDarkTheme() {
-        String theme = (String) GeneralSharedPreferences.getInstance().get(PreferenceKeys.KEY_APP_THEME);
+        String theme = (String) GeneralSharedPreferences.getInstance().get(GeneralKeys.KEY_APP_THEME);
         return theme.equals(context.getString(R.string.app_theme_dark));
     }
 

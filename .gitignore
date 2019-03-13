@@ -38,3 +38,10 @@ captures/
 
 # Form assets 
 **/assets/forms
+
+# Submodules
+javarosa/
+
+# Config for the official ODK Collect build
+collect_app/src/odkCollectRelease/
+

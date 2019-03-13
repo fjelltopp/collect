@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
+import timber.log.Timber;
+
 import static android.content.Context.ACCOUNT_SERVICE;
 
 /**
@@ -138,8 +140,11 @@ public class SendDeviceReport extends AsyncTask<Void,Void,String> {
 
             if (c.getCount() > 0) {
                 c.moveToPosition(-1);
+
+                DownloadFormListUtils mDownloadFOrmListUtils = new DownloadFormListUtils();
                 HashMap<String, FormDetails> formDetailsHashMap =
-                        DownloadFormListUtils.downloadFormList(true);
+                        mDownloadFOrmListUtils.downloadFormList(true);
+
                 while (c.moveToNext()) {
                     String currentFormId = c.getString(c.getColumnIndex(FormsProviderAPI.FormsColumns.JR_FORM_ID));
                     formReports.add(formDetailsHashMap.get(currentFormId));
@@ -161,14 +166,20 @@ public class SendDeviceReport extends AsyncTask<Void,Void,String> {
         JSONObject locationJSONObject = new JSONObject();
 
         for (String provider : providers) {
-            Location l = mLocationManager.getLastKnownLocation(provider);
+            try {
+                Location l = mLocationManager.getLastKnownLocation(provider);
 
-            if (l == null) {
-                continue;
+                if (l == null) {
+                    continue;
+                }
+                if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy()) {
+                    // Found best last known location: %s", l);
+                    bestLocation = l;
+                }
             }
-            if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy()) {
-                // Found best last known location: %s", l);
-                bestLocation = l;
+            catch (SecurityException e) {
+                Timber.e("Location not available: " + e.getMessage());
+                return null;
             }
         }
 
