@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">FGS Health Outcome and Quality Monitoring</string>
-    <string name="default_server_url">https://som.emro.info</string>
-    <string name="app_url">https://southcentral.emro.info/en/southcentral</string>
-    <string name="main_menu_details"></string>
-</resources>
