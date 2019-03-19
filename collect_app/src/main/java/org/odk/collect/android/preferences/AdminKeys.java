@@ -102,7 +102,7 @@ public final class AdminKeys {
             ag(KEY_SHOW_MAP_SDK,               GeneralKeys.KEY_MAP_SDK),
             ag(KEY_SHOW_MAP_BASEMAP,           GeneralKeys.KEY_MAP_BASEMAP),
 
-            ag(KEY_ANALYTICS,                 PreferenceKeys.KEY_ANALYTICS),
+            ag(KEY_ANALYTICS,                 GeneralKeys.KEY_ANALYTICS),
 
     };
 

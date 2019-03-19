@@ -60,6 +60,7 @@ import org.odk.collect.android.utilities.AuthDialogUtility;
 import org.odk.collect.android.utilities.LocaleHelper;
 import org.odk.collect.android.utilities.NotificationUtils;
 import org.odk.collect.android.utilities.PRNGFixes;
+import org.odk.collect.android.utilities.FileUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
