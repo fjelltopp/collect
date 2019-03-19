@@ -48,6 +48,7 @@ import java.io.IOException;
 import timber.log.Timber;
 
 import static org.odk.collect.android.preferences.GeneralKeys.KEY_SPLASH_PATH;
+import static org.odk.collect.android.utilities.DialogUtils.createErrorDialog;
 
 public class SplashScreenActivity extends Activity {
 
@@ -69,7 +70,7 @@ public class SplashScreenActivity extends Activity {
                 try {
                     Collect.createODKDirs();
                 } catch (RuntimeException e) {
-                    DialogUtils.showDialog(DialogUtils.createErrorDialog(SplashScreenActivity.this,
+                    DialogUtils.showDialog(createErrorDialog(SplashScreenActivity.this,
                             e.getMessage(), EXIT), SplashScreenActivity.this);
                     return;
                 }
@@ -133,14 +134,14 @@ public class SplashScreenActivity extends Activity {
             try {
                 Collect.refreshForms(getApplicationContext());
             } catch (RuntimeException e) {
-                createErrorDialog(e.getMessage(), EXIT);
+                createErrorDialog(this, e.getMessage(), EXIT);
             }
 
             //refresh settings from assets
             try {
                 Collect.refreshSettings(getApplicationContext());
             } catch (RuntimeException e) {
-                createErrorDialog(e.getMessage(), EXIT);
+                createErrorDialog(this, e.getMessage(), EXIT);
             }
 
             //subscribe to messaging topics

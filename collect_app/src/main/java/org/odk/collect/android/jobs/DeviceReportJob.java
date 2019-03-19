@@ -157,6 +157,7 @@ public class DeviceReportJob extends Job {
         ArrayList<String> displayNames = new ArrayList<String>();
         ArrayList<String> formFileMD5Sums = new ArrayList<String>();
         ArrayList<String> jrVersions = new ArrayList<String>();
+        DownloadFormListUtils mDownloadFormListUtils = new DownloadFormListUtils();
 
         int n = 0;
         Cursor c = null;
@@ -169,7 +170,8 @@ public class DeviceReportJob extends Job {
             if (c.getCount() > 0) {
                 c.moveToPosition(-1);
                 HashMap<String, FormDetails> formDetailsHashMap =
-                        DownloadFormListUtils.downloadFormList(true);
+
+                        mDownloadFormListUtils.downloadFormList(true);
                 while (c.moveToNext()) {
                     String currentFormId = c.getString(c.getColumnIndex(FormsProviderAPI.FormsColumns.JR_FORM_ID));
                     formReports.add(formDetailsHashMap.get(currentFormId));
