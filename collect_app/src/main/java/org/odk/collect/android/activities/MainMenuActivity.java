@@ -230,7 +230,7 @@ public class MainMenuActivity extends CollectAbstractActivity {
                     .getVersionedAppName());
         }
 
-        File f = new File(Collect.ODK_ROOT + "/collect.settings");
+        File f = new File(Collect.ODK_ROOT + File.separator + "settings" + File.separator + "collect.settings");
         File j = new File(Collect.ODK_ROOT + "/collect.settings.json");
         // Give JSON file preference
         if (j.exists()) {
@@ -395,9 +395,9 @@ public class MainMenuActivity extends CollectAbstractActivity {
             }
         }
 
-        ((Collect) getApplication())
-                .getDefaultTracker()
-                .enableAutoActivityTracking(true);
+        //((Collect) getApplication())
+        //        .getDefaultTracker()
+        //        .enableAutoActivityTracking(true);
     }
 
     @Override

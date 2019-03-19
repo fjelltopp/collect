@@ -19,11 +19,13 @@ package org.odk.collect.android.provider;
 import android.net.Uri;
 import android.provider.BaseColumns;
 
+import org.odk.collect.android.BuildConfig;
+
 /**
  * Convenience definitions for NotePadProvider
  */
 public final class InstanceProviderAPI {
-    public static final String AUTHORITY = "org.odk.collect.android.provider.odk.instances";
+    public static final String AUTHORITY = BuildConfig.APPLICATION_ID + ".provider.odk.instances";
 
     // This class cannot be instantiated
     private InstanceProviderAPI() {

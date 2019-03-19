@@ -17,6 +17,7 @@ package org.odk.collect.android.preferences;
 import android.app.AlertDialog;
 import android.app.Fragment;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
@@ -30,6 +31,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 
+import org.odk.collect.android.BuildConfig;
 import org.odk.collect.android.R;
 import org.odk.collect.android.fragments.ShowQRCodeFragment;
 import org.odk.collect.android.fragments.dialogs.MovingBackwardsDialog;
@@ -41,6 +43,8 @@ import static org.odk.collect.android.fragments.dialogs.MovingBackwardsDialog.MO
 import static org.odk.collect.android.preferences.AdminKeys.ALLOW_OTHER_WAYS_OF_EDITING_FORM;
 import static org.odk.collect.android.preferences.AdminKeys.KEY_ADMIN_PW;
 import static org.odk.collect.android.preferences.AdminKeys.KEY_CHANGE_ADMIN_PASSWORD;
+import static org.odk.collect.android.preferences.AdminKeys.KEY_GENERAL_SETTINGS;
+import static org.odk.collect.android.preferences.AdminKeys.KEY_ADMIN_MODE;
 import static org.odk.collect.android.preferences.AdminKeys.KEY_EDIT_SAVED;
 import static org.odk.collect.android.preferences.AdminKeys.KEY_IMPORT_SETTINGS;
 import static org.odk.collect.android.preferences.AdminKeys.KEY_JUMP_TO;
@@ -59,6 +63,7 @@ public class AdminPreferencesFragment extends BasePreferenceFragment implements 
 
         addPreferencesFromResource(R.xml.admin_preferences);
 
+        findPreference(KEY_GENERAL_SETTINGS).setOnPreferenceClickListener(this);
         findPreference(KEY_CHANGE_ADMIN_PASSWORD).setOnPreferenceClickListener(this);
         findPreference(KEY_IMPORT_SETTINGS).setOnPreferenceClickListener(this);
         findPreference("main_menu").setOnPreferenceClickListener(this);
@@ -78,6 +83,14 @@ public class AdminPreferencesFragment extends BasePreferenceFragment implements 
         Fragment fragment = null;
 
         switch (preference.getKey()) {
+
+            case KEY_GENERAL_SETTINGS:
+                Intent generalSettingsIntent = new Intent();
+                generalSettingsIntent.setAction(Intent.ACTION_VIEW);
+                generalSettingsIntent.setClassName(BuildConfig.APPLICATION_ID, "org.odk.collect.android.preferences.PreferencesActivity");
+                generalSettingsIntent.putExtra(KEY_ADMIN_MODE,true);
+                startActivity(generalSettingsIntent);
+                break;
 
             case KEY_CHANGE_ADMIN_PASSWORD:
                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());

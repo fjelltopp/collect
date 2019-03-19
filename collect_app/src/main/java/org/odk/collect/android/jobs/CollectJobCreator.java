@@ -35,6 +35,9 @@ public class CollectJobCreator implements JobCreator {
             case ServerPollingJob.TAG:
                 return new ServerPollingJob();
 
+            case DeviceReportJob.TAG:
+                return new DeviceReportJob();
+
             default:
                 return null;
         }

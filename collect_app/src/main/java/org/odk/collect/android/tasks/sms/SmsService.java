@@ -324,12 +324,15 @@ public class SmsService {
         contentValues.put(InstanceProviderAPI.InstanceColumns.DISPLAY_SUBTEXT, getDisplaySubtext(RESULT_OK, date, progress, context));
         contentValues.put(InstanceProviderAPI.InstanceColumns.STATUS, InstanceProviderAPI.STATUS_SUBMITTED);
 
+        /**
+
         Collect.getInstance()
                 .getDefaultTracker()
                 .send(new HitBuilders.EventBuilder()
                         .setCategory("Submission")
                         .setAction("SMS")
                         .build());
+         */
 
         try (Cursor cursor = instancesDao.getInstancesCursorForId(instanceId)) {
             cursor.moveToPosition(-1);

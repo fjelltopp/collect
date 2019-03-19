@@ -45,6 +45,7 @@ import org.odk.collect.android.external.ExternalDataManager;
 import org.odk.collect.android.injection.config.AppComponent;
 import org.odk.collect.android.injection.config.DaggerAppComponent;
 import org.odk.collect.android.jobs.CollectJobCreator;
+import org.odk.collect.android.jobs.DeviceReportJob;
 import org.odk.collect.android.logic.FormController;
 import org.odk.collect.android.logic.PropertyManager;
 import org.odk.collect.android.preferences.AdminSharedPreferences;
@@ -53,7 +54,9 @@ import org.odk.collect.android.preferences.FormMetadataMigrator;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
 import org.odk.collect.android.tasks.sms.SmsNotificationReceiver;
 import org.odk.collect.android.tasks.sms.SmsSentBroadcastReceiver;
-import org.odk.collect.android.utilities.FileUtils;
+import org.odk.collect.android.tasks.RefreshAllFormsTask;
+import org.odk.collect.android.utilities.AssetHandler;
+import org.odk.collect.android.utilities.AuthDialogUtility;
 import org.odk.collect.android.utilities.LocaleHelper;
 import org.odk.collect.android.utilities.NotificationUtils;
 import org.odk.collect.android.utilities.PRNGFixes;
@@ -85,7 +88,7 @@ public class Collect extends Application implements HasActivityInjector {
 
     // Storage paths
     public static final String ODK_ROOT = Environment.getExternalStorageDirectory()
-            + File.separator + "odk";
+            + File.separator + BuildConfig.ODK_ROOT_FOLDER;
     public static final String FORMS_PATH = ODK_ROOT + File.separator + "forms";
     public static final String INSTANCES_PATH = ODK_ROOT + File.separator + "instances";
     public static final String CACHE_PATH = ODK_ROOT + File.separator + ".cache";
@@ -202,7 +205,7 @@ public class Collect extends Application implements HasActivityInjector {
     public String getVersionedAppName() {
         String versionName = BuildConfig.VERSION_NAME;
         versionName = " " + versionName.replaceFirst("-", "\n");
-        return getString(R.string.app_name) + versionName;
+        return getString(R.string.app_name);// + versionName;
     }
 
     public boolean isNetworkAvailable() {
@@ -220,6 +223,41 @@ public class Collect extends Application implements HasActivityInjector {
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         MultiDex.install(this);
+    }
+
+    /**
+     * This method uses the DeleteFormsTask to delete forms that have been diskSynced to the db
+     * @throws RuntimeException
+     * @author soppela.jyri@gmail.com
+     */
+    public static void refreshForms(Context c) throws RuntimeException {
+        String cardstatus = Environment.getExternalStorageState();
+
+        if (!cardstatus.equals(Environment.MEDIA_MOUNTED)) {
+            throw new RuntimeException(Collect.getInstance().getString(R.string.sdcard_unmounted, cardstatus));
+        }
+
+        RefreshAllFormsTask mRefreshAllFormsTask = new RefreshAllFormsTask();
+        mRefreshAllFormsTask
+                .setContentResolver(c.getContentResolver());
+        mRefreshAllFormsTask
+                .setContext(c);
+        mRefreshAllFormsTask.execute();
+    }
+
+    /**
+     * This method writes collect.settings file from assets to disk
+     * @throws RuntimeException
+     * @author soppela.jyri@gmail.com
+     */
+    public static void refreshSettings(Context c) throws RuntimeException {
+        String cardstatus = Environment.getExternalStorageState();
+
+        if (!cardstatus.equals(Environment.MEDIA_MOUNTED)) {
+            throw new RuntimeException(Collect.getInstance().getString(R.string.sdcard_unmounted, cardstatus));
+        }
+
+        new AssetHandler(c).execute(Collect.ODK_ROOT,"settings");
     }
 
     @Override
@@ -264,6 +302,9 @@ public class Collect extends Application implements HasActivityInjector {
         } else {
             Timber.plant(new Timber.DebugTree());
         }
+
+        // add Firebase device messages
+        DeviceReportJob.schedulePeriodicJob(Collect.getInstance().getString(R.string.every_one_hour_value));
 
         setupLeakCanary();
     }

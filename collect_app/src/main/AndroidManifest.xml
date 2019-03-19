@@ -43,15 +43,12 @@ the specific language governing permissions and limitations under the License.
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-
-    <!-- Removed in API 23 -->
     <uses-permission
         android:name="android.permission.USE_CREDENTIALS"
         android:maxSdkVersion="22" />
     <uses-permission
         android:name="android.permission.MANAGE_ACCOUNTS"
         android:maxSdkVersion="22" />
-
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -72,6 +69,12 @@ the specific language governing permissions and limitations under the License.
     do not declare anything here - detect capabilities at runtime.
     -->
 
+    <permission
+        android:name="org.odk.collect.android.permission.MAPS_RECEIVE"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="org.odk.collect.android.permission.MAPS_RECEIVE" />
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
     <supports-screens
         android:anyDensity="true"
         android:largeScreens="true"
@@ -89,11 +92,11 @@ the specific language governing permissions and limitations under the License.
         android:supportsRtl="true">
         <provider
             android:name=".provider.FormsProvider"
-            android:authorities="org.odk.collect.android.provider.odk.forms"
+            android:authorities="${applicationId}.provider.odk.forms"
             android:exported="true" />
         <provider
             android:name=".provider.InstanceProvider"
-            android:authorities="org.odk.collect.android.provider.odk.instances"
+            android:authorities="${applicationId}.provider.odk.instances"
             android:exported="true" />
         <provider
             android:name="android.support.v4.content.FileProvider"
@@ -123,8 +126,12 @@ the specific language governing permissions and limitations under the License.
 
                 <category android:name="android.intent.category.DEFAULT" />
 
-                <data android:mimeType="vnd.android.cursor.item/vnd.odk.form" />
-                <data android:mimeType="vnd.android.cursor.item/vnd.odk.instance" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:mimeType="${contentItemType}" />
+                <data android:mimeType="${instanceItemType}" />
+
+
             </intent-filter>
         </activity>
         <activity
@@ -147,11 +154,16 @@ the specific language governing permissions and limitations under the License.
 
                 <category android:name="android.intent.category.DEFAULT" />
 
+                <data android:scheme="file" />
+                <data android:scheme="content" />
                 <data android:mimeType="vnd.android.cursor.dir/vnd.odk.instance" />
             </intent-filter>
         </activity>
         <activity android:name=".activities.FormChooserList">
             <intent-filter>
+
+                <data android:scheme="file" />
+                <data android:scheme="content" />
                 <action android:name="android.intent.action.VIEW" />
                 <action android:name="android.intent.action.EDIT" />
                 <action android:name="android.intent.action.PICK" />
@@ -252,6 +264,12 @@ the specific language governing permissions and limitations under the License.
             android:enabled="true"
             android:exported="false" />
         <!-- ... -->
+        <service
+            android:name="org.odk.collect.android.messaging.CollectFirebaseMessagingService">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

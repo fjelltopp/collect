@@ -50,6 +50,7 @@ public class GeneralPreferencesFragment extends BasePreferenceFragment implement
         findPreference("user_interface").setOnPreferenceClickListener(this);
         findPreference("form_management").setOnPreferenceClickListener(this);
         findPreference("user_and_device_identity").setOnPreferenceClickListener(this);
+        //findPreference("synchronization").setOnPreferenceClickListener(this);
 
         if (!getArguments().getBoolean(INTENT_KEY_ADMIN_MODE)) {
             setPreferencesVisibility();

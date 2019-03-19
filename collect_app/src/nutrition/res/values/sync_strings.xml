@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- strings for form synchronization -->
+    <string name="default_form_sync_url" translatable="false">https://s3-eu-west-1.amazonaws.com/meerkat-collect/nutrition/autoupdate</string>
+</resources>

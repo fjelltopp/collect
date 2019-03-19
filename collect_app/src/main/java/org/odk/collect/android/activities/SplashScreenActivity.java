@@ -29,6 +29,9 @@ import android.view.Window;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import com.google.firebase.messaging.FirebaseMessaging;
+
+import org.odk.collect.android.BuildConfig;
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.listeners.PermissionListener;
@@ -116,10 +119,37 @@ public class SplashScreenActivity extends Activity {
             firstRun = true;
         }
 
+        // if running on Debug mode, set firstRun to true
+        if (BuildConfig.DEBUG) {
+            firstRun = true;
+        }
+
         // do all the first run things
         if (firstRun || showSplash) {
             editor.putBoolean(GeneralKeys.KEY_FIRST_RUN, false);
             editor.commit();
+
+            //refresh forms from assets
+            try {
+                Collect.refreshForms(getApplicationContext());
+            } catch (RuntimeException e) {
+                createErrorDialog(e.getMessage(), EXIT);
+            }
+
+            //refresh settings from assets
+            try {
+                Collect.refreshSettings(getApplicationContext());
+            } catch (RuntimeException e) {
+                createErrorDialog(e.getMessage(), EXIT);
+            }
+
+            //subscribe to messaging topics
+            try {
+                FirebaseMessaging.getInstance().subscribeToTopic(BuildConfig.FLAVOR);
+            } catch (Exception e) {
+                Timber.e(e.getMessage());
+            }
+
             startSplashScreen(splashPath);
         } else {
             endSplashScreen();
