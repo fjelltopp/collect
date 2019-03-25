@@ -81,10 +81,6 @@ public class GeneralPreferencesFragment extends BasePreferenceFragment implement
         }
 
         if (fragment != null) {
-            Bundle bundle = new Bundle();
-            bundle.putBoolean(INTENT_KEY_ADMIN_MODE, getArguments().getBoolean(INTENT_KEY_ADMIN_MODE));
-
-            fragment.setArguments(bundle);
             getActivity()
                     .getFragmentManager()
                     .beginTransaction()
