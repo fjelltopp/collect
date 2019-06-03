@@ -1,40 +1,132 @@
 {
   "project_info": {
-    "project_number": "895206029843",
-    "project_id": "opendatakit-collect-forks"
+    "project_number": "653080734795",
+    "firebase_url": "https://fjelltopp-collect.firebaseio.com",
+    "project_id": "fjelltopp-collect",
+    "storage_bucket": "fjelltopp-collect.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:895206029843:android:5e1d7c3c296329e8",
+        "mobilesdk_app_id": "1:653080734795:android:33d7487a5ac4649e",
         "android_client_info": {
-          "package_name": "org.odk.collect.android"
+          "package_name": "org.fjelltopp.collect.car"
         }
       },
       "oauth_client": [
         {
-          "client_id": "895206029843-btufcdli1qptfd4sjrq5f0vdacsg68fj.apps.googleusercontent.com",
+          "client_id": "653080734795-siqm6u1p8425jcu86gfhs0l4i5atr722.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAD_MRym4ELgrqCJ4IGkPAdkfPXYX1WDeI"
+          "current_key": "AIzaSyAPN66USM7wPgDgM66fu1WfPiBuNCe8aSg"
         }
       ],
       "services": {
         "analytics_service": {
-          "status": 2,
-          "analytics_property": {
-            "tracking_id": "UA-111083836-1"
-          }
+          "status": 1
         },
         "appinvite_service": {
           "status": 1,
           "other_platform_oauth_client": []
         },
         "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:653080734795:android:8901d1e6c1591fca",
+        "android_client_info": {
+          "package_name": "org.fjelltopp.collect.demo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "653080734795-siqm6u1p8425jcu86gfhs0l4i5atr722.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPN66USM7wPgDgM66fu1WfPiBuNCe8aSg"
+        }
+      ],
+      "services": {
+        "analytics_service": {
           "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:653080734795:android:bfac45e197b87966",
+        "android_client_info": {
+          "package_name": "org.fjelltopp.collect.ukrainesurvey"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "653080734795-siqm6u1p8425jcu86gfhs0l4i5atr722.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPN66USM7wPgDgM66fu1WfPiBuNCe8aSg"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:653080734795:android:ef29b8cd2af41789",
+        "android_client_info": {
+          "package_name": "org.odk.collect.android.southcentral"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "653080734795-siqm6u1p8425jcu86gfhs0l4i5atr722.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPN66USM7wPgDgM66fu1WfPiBuNCe8aSg"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
         }
       }
     }

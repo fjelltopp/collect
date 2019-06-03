@@ -120,11 +120,6 @@ public class SplashScreenActivity extends Activity {
             firstRun = true;
         }
 
-        // if running on Debug mode, set firstRun to true
-        if (BuildConfig.DEBUG) {
-            firstRun = true;
-        }
-
         // do all the first run things
         if (firstRun || showSplash) {
             editor.putBoolean(GeneralKeys.KEY_FIRST_RUN, false);
@@ -148,7 +143,7 @@ public class SplashScreenActivity extends Activity {
             try {
                 FirebaseMessaging.getInstance().subscribeToTopic(BuildConfig.FLAVOR);
             } catch (Exception e) {
-                Timber.e(e.getMessage());
+                Timber.e(e, "Unable to subscribe to messaging topics");
             }
 
             startSplashScreen(splashPath);
