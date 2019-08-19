@@ -18,7 +18,6 @@
 
 package org.odk.collect.android.activities;
 
-import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -55,7 +54,6 @@ import org.odk.collect.android.utilities.gdrive.DriveHelper;
 import org.odk.collect.android.utilities.gdrive.GoogleAccountsManager;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,8 +63,6 @@ import java.util.Locale;
 import java.util.Stack;
 
 import timber.log.Timber;
-
-import static org.odk.collect.android.utilities.gdrive.GoogleAccountsManager.REQUEST_ACCOUNT_PICKER;
 
 public class GoogleDriveActivity extends FormListActivity implements View.OnClickListener,
         TaskListener, GoogleDriveFormDownloadListener, GoogleAccountsManager.GoogleAccountSelectionListener,
@@ -217,7 +213,7 @@ public class GoogleDriveActivity extends FormListActivity implements View.OnClic
      */
     private void getResultsFromApi() {
         if (!accountsManager.isGoogleAccountSelected()) {
-            accountsManager.chooseAccount();
+            accountsManager.chooseAccountAndRequestPermissionIfNeeded();
         } else {
             if (isDeviceOnline()) {
                 toDownload.clear();
@@ -233,15 +229,8 @@ public class GoogleDriveActivity extends FormListActivity implements View.OnClic
                 createAlertDialog(getString(R.string.no_connection));
             }
             currentPath.clear();
-            currentPath.add((String) rootButton.getText());
+            currentPath.add(rootButton.getText().toString());
         }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        accountsManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     /**
@@ -253,7 +242,7 @@ public class GoogleDriveActivity extends FormListActivity implements View.OnClic
         ConnectivityManager connMgr =
                 (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-        return (networkInfo != null && networkInfo.isConnected());
+        return networkInfo != null && networkInfo.isConnected();
     }
 
     @Override
@@ -345,17 +334,11 @@ public class GoogleDriveActivity extends FormListActivity implements View.OnClic
     protected Dialog onCreateDialog(int id) {
         switch (id) {
             case PROGRESS_DIALOG:
-                Collect.getInstance().getActivityLogger()
-                        .logAction(this, "onCreateDialog.PROGRESS_DIALOG", "show");
-
                 ProgressDialog progressDialog = new ProgressDialog(this);
                 DialogInterface.OnClickListener loadingButtonListener =
                         new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                Collect.getInstance().getActivityLogger()
-                                        .logAction(this, "onCreateDialog.PROGRESS_DIALOG",
-                                                "cancel");
                                 dialog.dismiss();
                                 getFileTask.cancel(true);
                                 getFileTask.setGoogleDriveFormDownloadListener(null);
@@ -381,8 +364,6 @@ public class GoogleDriveActivity extends FormListActivity implements View.OnClic
     }
 
     private void createAlertDialog(String message) {
-        Collect.getInstance().getActivityLogger().logAction(this, "createAlertDialog", "show");
-
         AlertDialog alertDialog = new AlertDialog.Builder(this).create();
         alertDialog.setTitle(getString(R.string.download_forms_result));
         alertDialog.setMessage(message);
@@ -391,8 +372,6 @@ public class GoogleDriveActivity extends FormListActivity implements View.OnClic
             public void onClick(DialogInterface dialog, int i) {
                 switch (i) {
                     case DialogInterface.BUTTON1: // ok
-                        Collect.getInstance().getActivityLogger()
-                                .logAction(this, "createAlertDialog", "OK");
                         alertShowing = false;
                         finish();
                         break;
@@ -411,12 +390,6 @@ public class GoogleDriveActivity extends FormListActivity implements View.OnClic
     protected void onActivityResult(final int requestCode, final int resultCode,
                                     final Intent data) {
         switch (requestCode) {
-            case REQUEST_ACCOUNT_PICKER:
-                if (resultCode == RESULT_OK && data != null && data.getExtras() != null) {
-                    String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
-                    accountsManager.setSelectedAccountName(accountName);
-                }
-                break;
             case AUTHORIZATION_REQUEST_CODE:
                 if (resultCode == Activity.RESULT_OK) {
                     getResultsFromApi();
@@ -513,18 +486,6 @@ public class GoogleDriveActivity extends FormListActivity implements View.OnClic
         }
         createAlertDialog(sb.toString());
 
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        Collect.getInstance().getActivityLogger().logOnStart(this);
-    }
-
-    @Override
-    protected void onStop() {
-        Collect.getInstance().getActivityLogger().logOnStop(this);
-        super.onStop();
     }
 
     @Override
@@ -820,8 +781,7 @@ public class GoogleDriveActivity extends FormListActivity implements View.OnClic
 
         private void downloadFile(@NonNull String fileId, String fileName) throws IOException {
             File file = new File(Collect.FORMS_PATH + File.separator + fileName);
-            FileOutputStream fileOutputStream = new FileOutputStream(file);
-            driveHelper.downloadFile(fileId, fileOutputStream);
+            driveHelper.downloadFile(fileId, file);
         }
 
         @Override

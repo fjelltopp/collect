@@ -35,11 +35,13 @@ import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.BuildConfig;
 import org.odk.collect.android.R;
 import org.odk.collect.android.activities.FormEntryActivity;
+import org.odk.collect.android.utilities.ActivityAvailability;
 import org.odk.collect.android.utilities.ApplicationConstants;
 import org.odk.collect.android.utilities.FileUtil;
 import org.odk.collect.android.utilities.FileUtils;
 import org.odk.collect.android.utilities.MediaManager;
 import org.odk.collect.android.utilities.MediaUtil;
+import org.odk.collect.android.utilities.ToastUtils;
 import org.odk.collect.android.widgets.interfaces.FileWidget;
 
 import java.io.File;
@@ -101,7 +103,6 @@ public class ArbitraryFileWidget extends QuestionWidget implements FileWidget {
         File newFile;
         // get the file path and create a copy in the instance folder
         if (object instanceof Uri) {
-            FileUtils.revokeFileReadWritePermission(getContext(), (Uri) object);
             String sourcePath = getSourcePathFromUri((Uri) object);
             String destinationPath = getDestinationPathFromSourcePath(sourcePath);
             File source = fileUtil.getFileAtPath(sourcePath);
@@ -112,11 +113,6 @@ public class ArbitraryFileWidget extends QuestionWidget implements FileWidget {
             newFile = (File) object;
         } else {
             Timber.w("FileWidget's setBinaryData must receive a File or Uri object.");
-            return;
-        }
-
-        if (newFile == null) {
-            Timber.e("setBinaryData FAILED");
             return;
         }
 
@@ -146,6 +142,7 @@ public class ArbitraryFileWidget extends QuestionWidget implements FileWidget {
         widgetLayout.setOrientation(LinearLayout.VERTICAL);
 
         chooseFileButton = getSimpleButton(getContext().getString(R.string.choose_file));
+        chooseFileButton.setEnabled(!getFormEntryPrompt().isReadOnly());
 
         answerLayout = new LinearLayout(getContext());
         answerLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -199,6 +196,13 @@ public class ArbitraryFileWidget extends QuestionWidget implements FileWidget {
         intent.setAction(Intent.ACTION_VIEW);
         intent.setDataAndType(contentUri, getMimeType(getSourcePathFromUri(fileUri)));
         FileUtils.grantFileReadPermissions(intent, contentUri, getContext());
-        getContext().startActivity(intent);
+
+        if (new ActivityAvailability(getContext()).isActivityAvailable(intent)) {
+            getContext().startActivity(intent);
+        } else {
+            String message = getContext().getString(R.string.activity_not_found, getContext().getString(R.string.open_file));
+            ToastUtils.showLongToast(message);
+            Timber.w(message);
+        }
     }
 }

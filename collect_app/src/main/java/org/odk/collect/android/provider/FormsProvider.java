@@ -39,41 +39,44 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 import timber.log.Timber;
 
 import static org.odk.collect.android.database.helpers.FormsDatabaseHelper.FORMS_TABLE_NAME;
-import static org.odk.collect.android.utilities.PermissionUtils.checkIfStoragePermissionsGranted;
+import static org.odk.collect.android.utilities.PermissionUtils.areStoragePermissionsGranted;
 
 public class FormsProvider extends ContentProvider {
     private static HashMap<String, String> sFormsProjectionMap;
 
     private static final int FORMS = 1;
     private static final int FORM_ID = 2;
+    // Forms unique by ID, keeping only the latest one downloaded
+    private static final int NEWEST_FORMS_BY_FORM_ID = 3;
 
     private static final UriMatcher URI_MATCHER;
 
-    private FormsDatabaseHelper getDbHelper() {
-        FormsDatabaseHelper databaseHelper = null;
+    private static FormsDatabaseHelper dbHelper;
+
+    private synchronized FormsDatabaseHelper getDbHelper() {
         // wrapper to test and reset/set the dbHelper based upon the attachment state of the device.
         try {
             Collect.createODKDirs();
         } catch (RuntimeException e) {
-            databaseHelper = null;
             return null;
         }
 
-        if (databaseHelper != null) {
-            return databaseHelper;
+        if (dbHelper == null) {
+            dbHelper = new FormsDatabaseHelper();
         }
-        databaseHelper = new FormsDatabaseHelper();
-        return databaseHelper;
+
+        return dbHelper;
     }
 
     @Override
     public boolean onCreate() {
 
-        if (!checkIfStoragePermissionsGranted(getContext())) {
+        if (!areStoragePermissionsGranted(getContext())) {
             Timber.i("Read and write permissions are required for this content provider to function.");
             return false;
         }
@@ -87,7 +90,7 @@ public class FormsProvider extends ContentProvider {
     public Cursor query(@NonNull Uri uri, String[] projection, String selection,
                         String[] selectionArgs, String sortOrder) {
 
-        if (!checkIfStoragePermissionsGranted(getContext())) {
+        if (!areStoragePermissionsGranted(getContext())) {
             return null;
         }
 
@@ -96,23 +99,32 @@ public class FormsProvider extends ContentProvider {
         qb.setProjectionMap(sFormsProjectionMap);
         qb.setStrict(true);
 
-        switch (URI_MATCHER.match(uri)) {
-            case FORMS:
-                break;
-
-            case FORM_ID:
-                qb.appendWhere(FormsColumns._ID + "="
-                        + uri.getPathSegments().get(1));
-                break;
-
-            default:
-                throw new IllegalArgumentException("Unknown URI " + uri);
-        }
-
         Cursor c = null;
+        String groupBy = null;
         FormsDatabaseHelper formsDatabaseHelper = getDbHelper();
         if (formsDatabaseHelper != null) {
-            c = qb.query(formsDatabaseHelper.getReadableDatabase(), projection, selection, selectionArgs, null, null, sortOrder);
+            switch (URI_MATCHER.match(uri)) {
+                case FORMS:
+                    break;
+
+                case FORM_ID:
+                    qb.appendWhere(FormsColumns._ID + "="
+                            + uri.getPathSegments().get(1));
+                    break;
+
+                // Only include the latest form that was downloaded with each form_id
+                case NEWEST_FORMS_BY_FORM_ID:
+                    Map<String, String> filteredProjectionMap = new HashMap<>(sFormsProjectionMap);
+                    filteredProjectionMap.put(FormsColumns.DATE, "MAX(" + FormsColumns.DATE + ")");
+
+                    qb.setProjectionMap(filteredProjectionMap);
+                    groupBy = FormsColumns.JR_FORM_ID;
+                    break;
+
+                default:
+                    throw new IllegalArgumentException("Unknown URI " + uri);
+            }
+            c = qb.query(formsDatabaseHelper.getReadableDatabase(), projection, selection, selectionArgs, groupBy, null, sortOrder);
 
             // Tell the cursor what uri to watch, so it knows when its source data changes
             c.setNotificationUri(getContext().getContentResolver(), uri);
@@ -125,6 +137,7 @@ public class FormsProvider extends ContentProvider {
     public String getType(@NonNull Uri uri) {
         switch (URI_MATCHER.match(uri)) {
             case FORMS:
+            case NEWEST_FORMS_BY_FORM_ID:
                 return FormsColumns.CONTENT_TYPE;
 
             case FORM_ID:
@@ -142,7 +155,7 @@ public class FormsProvider extends ContentProvider {
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
 
-        if (!checkIfStoragePermissionsGranted(getContext())) {
+        if (!areStoragePermissionsGranted(getContext())) {
             return null;
         }
 
@@ -232,10 +245,7 @@ public class FormsProvider extends ContentProvider {
                 Uri formUri = ContentUris.withAppendedId(FormsColumns.CONTENT_URI,
                         rowId);
                 getContext().getContentResolver().notifyChange(formUri, null);
-                Collect.getInstance()
-                        .getActivityLogger()
-                        .logActionParam(this, "insert", formUri.toString(),
-                                values.getAsString(FormsColumns.FORM_FILE_PATH));
+                getContext().getContentResolver().notifyChange(FormsProviderAPI.FormsColumns.CONTENT_NEWEST_FORMS_BY_FORMID_URI, null);
                 return formUri;
             }
         }
@@ -281,7 +291,7 @@ public class FormsProvider extends ContentProvider {
      */
     @Override
     public int delete(@NonNull Uri uri, String where, String[] whereArgs) {
-        if (!checkIfStoragePermissionsGranted(getContext())) {
+        if (!areStoragePermissionsGranted(getContext())) {
             return 0;
         }
         int count = 0;
@@ -302,8 +312,6 @@ public class FormsProvider extends ContentProvider {
                                                 .getColumnIndex(FormsColumns.JRCACHE_FILE_PATH)));
                                 String formFilePath = del.getString(del
                                         .getColumnIndex(FormsColumns.FORM_FILE_PATH));
-                                Collect.getInstance().getActivityLogger()
-                                        .logAction(this, "delete", formFilePath);
                                 deleteFileOrDir(formFilePath);
                                 deleteFileOrDir(del.getString(del
                                         .getColumnIndex(FormsColumns.FORM_MEDIA_PATH)));
@@ -331,8 +339,6 @@ public class FormsProvider extends ContentProvider {
                                         .getColumnIndex(FormsColumns.JRCACHE_FILE_PATH)));
                                 String formFilePath = c.getString(c
                                         .getColumnIndex(FormsColumns.FORM_FILE_PATH));
-                                Collect.getInstance().getActivityLogger()
-                                        .logAction(this, "delete", formFilePath);
                                 deleteFileOrDir(formFilePath);
                                 deleteFileOrDir(c.getString(c
                                         .getColumnIndex(FormsColumns.FORM_MEDIA_PATH)));
@@ -371,6 +377,7 @@ public class FormsProvider extends ContentProvider {
             }
 
             getContext().getContentResolver().notifyChange(uri, null);
+            getContext().getContentResolver().notifyChange(FormsColumns.CONTENT_NEWEST_FORMS_BY_FORMID_URI, null);
         }
 
         return count;
@@ -380,7 +387,7 @@ public class FormsProvider extends ContentProvider {
     public int update(Uri uri, ContentValues values, String where,
                       String[] whereArgs) {
 
-        if (!checkIfStoragePermissionsGranted(getContext())) {
+        if (!areStoragePermissionsGranted(getContext())) {
             return 0;
         }
 
@@ -529,6 +536,7 @@ public class FormsProvider extends ContentProvider {
             }
 
             getContext().getContentResolver().notifyChange(uri, null);
+            getContext().getContentResolver().notifyChange(FormsProviderAPI.FormsColumns.CONTENT_NEWEST_FORMS_BY_FORMID_URI, null);
         }
 
         return count;
@@ -540,17 +548,21 @@ public class FormsProvider extends ContentProvider {
         if (whereArgs == null || whereArgs.length == 0) {
             newWhereArgs = new String[] {formId};
         } else {
-            newWhereArgs = new String[(whereArgs.length + 1)];
+            newWhereArgs = new String[whereArgs.length + 1];
             newWhereArgs[0] = formId;
             System.arraycopy(whereArgs, 0, newWhereArgs, 1, whereArgs.length);
         }
         return newWhereArgs;
     }
 
+    // Leading slashes are removed from paths to support minSdkVersion < 18:
+    // https://developer.android.com/reference/android/content/UriMatcher
     static {
         URI_MATCHER = new UriMatcher(UriMatcher.NO_MATCH);
-        URI_MATCHER.addURI(FormsProviderAPI.AUTHORITY, "forms", FORMS);
-        URI_MATCHER.addURI(FormsProviderAPI.AUTHORITY, "forms/#", FORM_ID);
+        URI_MATCHER.addURI(FormsProviderAPI.AUTHORITY, FormsColumns.CONTENT_URI.getPath().replaceAll("^/+", ""), FORMS);
+        URI_MATCHER.addURI(FormsProviderAPI.AUTHORITY, FormsColumns.CONTENT_URI.getPath().replaceAll("^/+", "") + "/#", FORM_ID);
+        // Only available for query and type
+        URI_MATCHER.addURI(FormsProviderAPI.AUTHORITY, FormsColumns.CONTENT_NEWEST_FORMS_BY_FORMID_URI.getPath().replaceAll("^/+", ""), NEWEST_FORMS_BY_FORM_ID);
 
         sFormsProjectionMap = new HashMap<>();
         sFormsProjectionMap.put(FormsColumns._ID, FormsColumns._ID);

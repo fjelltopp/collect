@@ -25,14 +25,16 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
+import android.support.v4.widget.NestedScrollView;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnLongClickListener;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TextView;
 
@@ -61,6 +63,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,7 +77,7 @@ import static org.odk.collect.android.utilities.ApplicationConstants.RequestCode
  * @author carlhartung
  */
 @SuppressLint("ViewConstructor")
-public class ODKView extends ScrollView implements OnLongClickListener {
+public class ODKView extends FrameLayout implements OnLongClickListener {
 
     private final LinearLayout view;
     private final LinearLayout.LayoutParams layout;
@@ -85,6 +88,8 @@ public class ODKView extends ScrollView implements OnLongClickListener {
     public ODKView(Context context, final FormEntryPrompt[] questionPrompts,
             FormEntryCaption[] groups, boolean advancingPage) {
         super(context);
+
+        inflate(getContext(), R.layout.nested_scroll_view, this); // keep in an xml file to enable the vertical scrollbar
 
         widgets = new ArrayList<>();
 
@@ -207,7 +212,7 @@ public class ODKView extends ScrollView implements OnLongClickListener {
             view.addView(qw, layout);
         }
 
-        addView(view);
+        ((NestedScrollView) findViewById(R.id.odk_view_container)).addView(view);
 
         // see if there is an autoplay option.
         // Only execute it during forward swipes through the form
@@ -250,10 +255,6 @@ public class ODKView extends ScrollView implements OnLongClickListener {
         }
     }
 
-    protected void onScrollChanged(int l, int t, int oldl, int oldt) {
-        Collect.getInstance().getActivityLogger().logScrollAction(this, t - oldt);
-    }
-
     /**
      * @return a HashMap of answers entered by the user for this set of widgets
      */
@@ -287,34 +288,45 @@ public class ODKView extends ScrollView implements OnLongClickListener {
         }
     }
 
+    /**
+     * @see #getGroupsPath(FormEntryCaption[], boolean)
+     */
     @NonNull
     public static String getGroupsPath(FormEntryCaption[] groups) {
-        StringBuilder path = new StringBuilder("");
-        if (groups != null) {
-            String longText;
-            int multiplicity;
-            int index = 1;
-            // list all groups in one string
-            for (FormEntryCaption group : groups) {
-                multiplicity = group.getMultiplicity() + 1;
-                longText = group.getLongText();
-                if (longText != null) {
-                    path.append(longText);
-                    if (group.repeats() && multiplicity > 0) {
-                        path
-                                .append(" (")
-                                .append(multiplicity)
-                                .append(")\u200E");
-                    }
-                    if (index < groups.length) {
-                        path.append(" > ");
-                    }
-                    index++;
-                }
-            }
+        return getGroupsPath(groups, false);
+    }
+
+    /**
+     * Builds a string representing the 'path' of the list of groups.
+     * Each level is separated by `>`.
+     *
+     * Some views (e.g. the repeat picker) may want to hide the multiplicity of the last item,
+     * i.e. show `Friends` instead of `Friends > 1`.
+     */
+    @NonNull
+    public static String getGroupsPath(FormEntryCaption[] groups, boolean hideLastMultiplicity) {
+        if (groups == null) {
+            return "";
         }
 
-        return path.toString();
+        List<String> segments = new ArrayList<>();
+        int index = 1;
+        for (FormEntryCaption group : groups) {
+            String text = group.getLongText();
+
+            if (text != null) {
+                segments.add(text);
+
+                boolean isMultiplicityAllowed = !(hideLastMultiplicity && index == groups.length);
+                if (group.repeats() && isMultiplicityAllowed) {
+                    segments.add(Integer.toString(group.getMultiplicity() + 1));
+                }
+            }
+
+            index++;
+        }
+
+        return TextUtils.join(" > ", segments);
     }
 
     public void setFocus(Context context) {
@@ -476,7 +488,7 @@ public class ODKView extends ScrollView implements OnLongClickListener {
             // postDelayed is needed because otherwise scrolling may not work as expected in case when
             // answers are validated during form finalization.
             new Handler().postDelayed(() -> {
-                scrollTo(0, qw.getTop());
+                findViewById(R.id.odk_view_container).scrollTo(0, qw.getTop());
 
                 ValueAnimator va = new ValueAnimator();
                 if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT) {

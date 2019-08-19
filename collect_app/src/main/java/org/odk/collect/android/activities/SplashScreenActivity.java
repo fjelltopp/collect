@@ -15,8 +15,6 @@
 package org.odk.collect.android.activities;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -37,8 +35,10 @@ import org.odk.collect.android.BuildConfig;
 import org.odk.collect.android.R;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.listeners.PermissionListener;
+import org.odk.collect.android.preferences.GeneralKeys;
 import org.odk.collect.android.preferences.GeneralSharedPreferences;
-import org.odk.collect.android.preferences.PreferenceKeys;
+import org.odk.collect.android.utilities.DialogUtils;
+import org.odk.collect.android.utilities.PermissionUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,8 +47,8 @@ import java.io.IOException;
 
 import timber.log.Timber;
 
-import static org.odk.collect.android.preferences.PreferenceKeys.KEY_SPLASH_PATH;
-import static org.odk.collect.android.utilities.PermissionUtils.requestStoragePermissions;
+import static org.odk.collect.android.preferences.GeneralKeys.KEY_SPLASH_PATH;
+import static org.odk.collect.android.utilities.DialogUtils.createErrorDialog;
 
 public class SplashScreenActivity extends Activity {
 
@@ -63,15 +63,15 @@ public class SplashScreenActivity extends Activity {
         // this splash screen should be a blank slate
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        requestStoragePermissions(this, new PermissionListener() {
+        new PermissionUtils(this).requestStoragePermissions(new PermissionListener() {
             @Override
             public void granted() {
                 // must be at the beginning of any activity that can be called from an external intent
                 try {
                     Collect.createODKDirs();
-                    Collect.getInstance().getActivityLogger().open();
                 } catch (RuntimeException e) {
-                    createErrorDialog(e.getMessage(), EXIT);
+                    DialogUtils.showDialog(createErrorDialog(SplashScreenActivity.this,
+                            e.getMessage(), EXIT), SplashScreenActivity.this);
                     return;
                 }
 
@@ -106,49 +106,44 @@ public class SplashScreenActivity extends Activity {
             Timber.e(e, "Unable to get package info");
         }
 
-        boolean firstRun = sharedPreferences.getBoolean(PreferenceKeys.KEY_FIRST_RUN, true);
+        boolean firstRun = sharedPreferences.getBoolean(GeneralKeys.KEY_FIRST_RUN, true);
         boolean showSplash =
-                sharedPreferences.getBoolean(PreferenceKeys.KEY_SHOW_SPLASH, false);
+                sharedPreferences.getBoolean(GeneralKeys.KEY_SHOW_SPLASH, false);
         String splashPath = (String) GeneralSharedPreferences.getInstance().get(KEY_SPLASH_PATH);
 
         // if you've increased version code, then update the version number and set firstRun to true
-        if (sharedPreferences.getLong(PreferenceKeys.KEY_LAST_VERSION, 0)
+        if (sharedPreferences.getLong(GeneralKeys.KEY_LAST_VERSION, 0)
                 < packageInfo.versionCode) {
-            editor.putLong(PreferenceKeys.KEY_LAST_VERSION, packageInfo.versionCode);
+            editor.putLong(GeneralKeys.KEY_LAST_VERSION, packageInfo.versionCode);
             editor.apply();
 
             firstRun = true;
         }
 
-        // if running on Debug mode, set firstRun to true
-        if (BuildConfig.DEBUG) {
-            firstRun = true;
-        }
-
         // do all the first run things
         if (firstRun || showSplash) {
-            editor.putBoolean(PreferenceKeys.KEY_FIRST_RUN, false);
+            editor.putBoolean(GeneralKeys.KEY_FIRST_RUN, false);
             editor.commit();
 
             //refresh forms from assets
             try {
                 Collect.refreshForms(getApplicationContext());
             } catch (RuntimeException e) {
-                createErrorDialog(e.getMessage(), EXIT);
+                createErrorDialog(this, e.getMessage(), EXIT);
             }
 
             //refresh settings from assets
             try {
                 Collect.refreshSettings(getApplicationContext());
             } catch (RuntimeException e) {
-                createErrorDialog(e.getMessage(), EXIT);
+                createErrorDialog(this, e.getMessage(), EXIT);
             }
 
             //subscribe to messaging topics
             try {
                 FirebaseMessaging.getInstance().subscribeToTopic(BuildConfig.FLAVOR);
             } catch (Exception e) {
-                Timber.e(e.getMessage());
+                Timber.e(e, "Unable to subscribe to messaging topics");
             }
 
             startSplashScreen(splashPath);
@@ -239,41 +234,5 @@ public class SplashScreenActivity extends Activity {
             }
         };
         t.start();
-    }
-
-    private void createErrorDialog(String errorMsg, final boolean shouldExit) {
-        Collect.getInstance().getActivityLogger().logAction(this, "createErrorDialog", "show");
-        AlertDialog alertDialog = new AlertDialog.Builder(this).create();
-        alertDialog.setIcon(android.R.drawable.ic_dialog_info);
-        alertDialog.setMessage(errorMsg);
-        DialogInterface.OnClickListener errorListener = new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int i) {
-                switch (i) {
-                    case DialogInterface.BUTTON_POSITIVE:
-                        Collect.getInstance().getActivityLogger().logAction(this,
-                                "createErrorDialog", "OK");
-                        if (shouldExit) {
-                            finish();
-                        }
-                        break;
-                }
-            }
-        };
-        alertDialog.setCancelable(false);
-        alertDialog.setButton(getString(R.string.ok), errorListener);
-        alertDialog.show();
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        Collect.getInstance().getActivityLogger().logOnStart(this);
-    }
-
-    @Override
-    protected void onStop() {
-        Collect.getInstance().getActivityLogger().logOnStop(this);
-        super.onStop();
     }
 }

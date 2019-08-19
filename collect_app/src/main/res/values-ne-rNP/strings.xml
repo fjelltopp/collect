@@ -4,9 +4,11 @@
   <string name="activity_not_found">प्रयोग गर्न कुनै पनि क्रियाकलाप भेटिएन: %s </string>
   <string name="view_image">तस्विर हेर्नुहोस्।</string>
   <string name="annotate_image">तस्विर एनोटेट गर्नुहोस्।</string>
+  <string name="signature_capture">हस्ताक्षर गर्नुहोस्</string>
   <string name="view_video">भिडियो हेर्नुहोस्।</string>
   <string name="choose_audio">अडियो रोज्नुहोस्।</string>
   <string name="add_another">समूह थप्नुहोस् </string>
+  <string name="add_another_menu">अर्को थप्नुहोस्</string>
   <string name="add_another_repeat">के अर्को \"%s\" समूह थप्नु हुन्छ ?</string>
   <string name="add_repeat">नयाँ \"%s\" समूह थप्न चाहनु हुन्छ ?</string>
   <string name="add_repeat_no">नथप्नु होला !</string>
@@ -101,6 +103,8 @@
   <string name="quit_application">बाहिर निस्कनुहोस् %s </string>
   <string name="quit_entry">फारम संचित गरी बाहिर निस्कनुहोस् </string>
   <string name="refresh">रिफ्रेश/n/गर्नुहोस् </string>
+  <string name="group_label">समूह</string>
+  <string name="repeatable_group_label">दोहोरिने समूह</string>
   <string name="replace_barcode">बारकोड बदल्नुहोस् </string>
   <string name="required_answer_error">माफ गर्नुहोला, यो उत्तर अनिवार्य चाहिन्छ !</string>
   <string name="review_data">संचित फारम सम्पादन गर्न</string>
@@ -266,7 +270,6 @@
   <string name="drive_get_file">%1$s र मिडिया फाइलहरु प्राप्त गरिदैछ |</string>
   <string name="no_google_account">एउटा गुगल खाता छान्नुहोस् ! </string>
   <string name="google_set_account">तपाईंले गुगल गुगल सिट्सलाई आफ्नो सर्भरको रूपमा छान्नुभयो , अघि बढ्नु पूर्व कृपया जनरल सेटिङ्समा त्यहि अनुरूपको गुगल खाता छान्नुहोस्</string>
-  <string name="odk_auth_auth_fail">ODK स्वत: प्रेषण प्रमाणीकरण असफल , कृपया आफ्नो सेटिङ्स सही छ छैन चेक गर्नुहोस्</string>
   <string name="notification_error">सूचना देखाउन गल्ती भयो </string>
   <string name="delete_after_send">पठाए पछि डिलिट गर्नुहोस् </string>
   <string name="delete_after_send_summary">अन्तिम रुप दिइएको फारम र मिडिया सर्भरमा पठाए पछि डिलिट गर्छ </string>
@@ -313,7 +316,6 @@
   <string name="select_geotrace_mode">जियो ट्रेस विधि छान्नुहोस्</string>
   <string name="start">शुरू</string>
   <string name="enable_gps">GPS शुरु गर्नुहोस्</string>
-  <string name="enable_gps_message">तपाईंको यन्त्रमा GPS बन्द छ । यसलाई अन गर्न चाहनु हुन्छ ?</string>
   <string name="polygon_save">बहुभुज सुरक्षित गर्नुहोस्। </string>
   <string name="gps_enable_message">तपाईंको यन्त्रमा GPS बन्द छ । यसलाई अन गर्न चाहनु हुन्छ ?</string>
   <string name="select_offline_layer">अफलाइन तह चयन गर्नुहोस्।</string>

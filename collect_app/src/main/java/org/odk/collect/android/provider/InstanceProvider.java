@@ -41,7 +41,7 @@ import java.util.Locale;
 import timber.log.Timber;
 
 import static org.odk.collect.android.database.helpers.InstancesDatabaseHelper.INSTANCES_TABLE_NAME;
-import static org.odk.collect.android.utilities.PermissionUtils.checkIfStoragePermissionsGranted;
+import static org.odk.collect.android.utilities.PermissionUtils.areStoragePermissionsGranted;
 
 public class InstanceProvider extends ContentProvider {
     private static HashMap<String, String> sInstancesProjectionMap;
@@ -50,27 +50,27 @@ public class InstanceProvider extends ContentProvider {
     private static final int INSTANCE_ID = 2;
 
     private static final UriMatcher URI_MATCHER;
+
+    private static InstancesDatabaseHelper dbHelper;
     
-    private InstancesDatabaseHelper getDbHelper() {
-        InstancesDatabaseHelper databaseHelper = null;
+    private synchronized InstancesDatabaseHelper getDbHelper() {
         // wrapper to test and reset/set the dbHelper based upon the attachment state of the device.
         try {
             Collect.createODKDirs();
         } catch (RuntimeException e) {
-            databaseHelper = null;
             return null;
         }
 
-        if (databaseHelper != null) {
-            return databaseHelper;
+        if (dbHelper == null) {
+            dbHelper = new InstancesDatabaseHelper();
         }
-        databaseHelper = new InstancesDatabaseHelper();
-        return databaseHelper;
+
+        return dbHelper;
     }
 
     @Override
     public boolean onCreate() {
-        if (!checkIfStoragePermissionsGranted(getContext())) {
+        if (!areStoragePermissionsGranted(getContext())) {
             Timber.i("Read and write permissions are required for this content provider to function.");
             return false;
         }
@@ -84,7 +84,7 @@ public class InstanceProvider extends ContentProvider {
     public Cursor query(@NonNull Uri uri, String[] projection, String selection, String[] selectionArgs,
                         String sortOrder) {
 
-        if (!checkIfStoragePermissionsGranted(getContext())) {
+        if (!areStoragePermissionsGranted(getContext())) {
             return null;
         }
 
@@ -138,7 +138,7 @@ public class InstanceProvider extends ContentProvider {
             throw new IllegalArgumentException("Unknown URI " + uri);
         }
 
-        if (!checkIfStoragePermissionsGranted(getContext())) {
+        if (!areStoragePermissionsGranted(getContext())) {
             return null;
         }
 
@@ -172,8 +172,6 @@ public class InstanceProvider extends ContentProvider {
             if (rowId > 0) {
                 Uri instanceUri = ContentUris.withAppendedId(InstanceColumns.CONTENT_URI, rowId);
                 getContext().getContentResolver().notifyChange(instanceUri, null);
-                Collect.getInstance().getActivityLogger().logActionParam(this, "insert",
-                        instanceUri.toString(), values.getAsString(InstanceColumns.INSTANCE_FILE_PATH));
                 return instanceUri;
             }
         }
@@ -243,7 +241,7 @@ public class InstanceProvider extends ContentProvider {
      */
     @Override
     public int delete(@NonNull Uri uri, String where, String[] whereArgs) {
-        if (!checkIfStoragePermissionsGranted(getContext())) {
+        if (!areStoragePermissionsGranted(getContext())) {
             return 0;
         }
         int count = 0;
@@ -261,8 +259,6 @@ public class InstanceProvider extends ContentProvider {
                             do {
                                 String instanceFile = del.getString(
                                         del.getColumnIndex(InstanceColumns.INSTANCE_FILE_PATH));
-                                Collect.getInstance().getActivityLogger().logAction(this, "delete",
-                                        instanceFile);
                                 File instanceDir = (new File(instanceFile)).getParentFile();
                                 deleteAllFilesInDirectory(instanceDir);
                             } while (del.moveToNext());
@@ -288,8 +284,6 @@ public class InstanceProvider extends ContentProvider {
                             do {
                                 String instanceFile = c.getString(
                                         c.getColumnIndex(InstanceColumns.INSTANCE_FILE_PATH));
-                                Collect.getInstance().getActivityLogger().logAction(this, "delete",
-                                        instanceFile);
                                 File instanceDir = (new File(instanceFile)).getParentFile();
                                 deleteAllFilesInDirectory(instanceDir);
                             } while (c.moveToNext());
@@ -311,7 +305,7 @@ public class InstanceProvider extends ContentProvider {
                         if (whereArgs == null || whereArgs.length == 0) {
                             newWhereArgs = new String[] {instanceId};
                         } else {
-                            newWhereArgs = new String[(whereArgs.length + 1)];
+                            newWhereArgs = new String[whereArgs.length + 1];
                             newWhereArgs[0] = instanceId;
                             System.arraycopy(whereArgs, 0, newWhereArgs, 1, whereArgs.length);
                         }
@@ -337,7 +331,7 @@ public class InstanceProvider extends ContentProvider {
 
     @Override
     public int update(@NonNull Uri uri, ContentValues values, String where, String[] whereArgs) {
-        if (!checkIfStoragePermissionsGranted(getContext())) {
+        if (!areStoragePermissionsGranted(getContext())) {
             return 0;
         }
         int count = 0;
@@ -385,7 +379,7 @@ public class InstanceProvider extends ContentProvider {
                     if (whereArgs == null || whereArgs.length == 0) {
                         newWhereArgs = new String[] {instanceId};
                     } else {
-                        newWhereArgs = new String[(whereArgs.length + 1)];
+                        newWhereArgs = new String[whereArgs.length + 1];
                         newWhereArgs[0] = instanceId;
                         System.arraycopy(whereArgs, 0, newWhereArgs, 1, whereArgs.length);
                     }
