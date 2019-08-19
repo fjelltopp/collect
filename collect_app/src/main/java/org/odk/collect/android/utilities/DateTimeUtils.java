@@ -14,8 +14,15 @@ import org.odk.collect.android.logic.DatePickerDetails;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+
+import bikramsambat.BikramSambatDate;
+import bikramsambat.BsCalendar;
+import bikramsambat.BsException;
+import bikramsambat.BsGregorianDate;
+import timber.log.Timber;
 
 public class DateTimeUtils {
 
@@ -35,7 +42,7 @@ public class DateTimeUtils {
         DateFormat dateFormatter;
         locale = locale == null ? Locale.getDefault() : locale;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            String format = android.text.format.DateFormat.getBestDateTimePattern(locale, getDateTimePattern(containsTime, datePickerDetails));
+            String format = android.text.format.DateFormat.getBestDateTimePattern(locale, getDateTimeSkeleton(containsTime, datePickerDetails));
             dateFormatter = new SimpleDateFormat(format, locale);
         } else {
             dateFormatter = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, locale);
@@ -44,7 +51,7 @@ public class DateTimeUtils {
     }
 
     private static String getCustomDateTimeLabel(Date date, DatePickerDetails datePickerDetails, boolean containsTime, Context context) {
-        String gregorianDateText = getGregorianDateTimeLabel(date, datePickerDetails, containsTime, Locale.US);
+        String gregorianDateText = getGregorianDateTimeLabel(date, datePickerDetails, containsTime, Locale.getDefault());
 
         DateTime customDate;
         String[] monthArray;
@@ -54,37 +61,62 @@ public class DateTimeUtils {
         } else if (datePickerDetails.isCopticType()) {
             customDate = new DateTime(date).withChronology(CopticChronology.getInstance());
             monthArray = context.getResources().getStringArray(R.array.coptic_months);
-        } else {
+        } else if (datePickerDetails.isIslamicType()) {
             customDate = new DateTime(date).withChronology(IslamicChronology.getInstance());
             monthArray = context.getResources().getStringArray(R.array.islamic_months);
-        }
-
-        String day = datePickerDetails.isSpinnerMode() ? customDate.getDayOfMonth() + " " : "";
-        String month = datePickerDetails.isSpinnerMode() || datePickerDetails.isMonthYearMode() ? monthArray[customDate.getMonthOfYear() - 1] + " " : "";
-
-        String customDateText;
-        if (containsTime) {
-            SimpleDateFormat df = new SimpleDateFormat("HH:mm", Locale.getDefault());
-            customDateText = day + month + customDate.getYear() + ", " + df.format(customDate.toDate());
         } else {
-            customDateText = day + month + customDate.getYear();
+            customDate = new DateTime(date);
+            monthArray = BsCalendar.MONTH_NAMES.toArray(new String[BsCalendar.MONTH_NAMES.size()]);
+        }
+        String customDateText = "";
+
+        SimpleDateFormat df = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        if (datePickerDetails.isBikramSambatType()) {
+            BikramSambatDate bikramSambatDate;
+            try {
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(date);
+                bikramSambatDate = BsCalendar.getInstance().toBik(new BsGregorianDate(
+                                        calendar.get(Calendar.YEAR),
+                                        calendar.get(Calendar.MONTH) + 1,
+                                        calendar.get(Calendar.DAY_OF_MONTH)));
+                String day = datePickerDetails.isSpinnerMode() ? bikramSambatDate.day + " " : "";
+                String month = datePickerDetails.isSpinnerMode() || datePickerDetails.isMonthYearMode() ? monthArray[bikramSambatDate.month - 1] + " " : "";
+
+                if (containsTime) {
+                    customDateText = day + month + bikramSambatDate.year + ", " + df.format(customDate.toDate());
+                } else {
+                    customDateText = day + month + bikramSambatDate.year;
+                }
+            } catch (BsException e) {
+                Timber.e(e);
+            }
+        } else {
+            String day = datePickerDetails.isSpinnerMode() ? customDate.getDayOfMonth() + " " : "";
+            String month = datePickerDetails.isSpinnerMode() || datePickerDetails.isMonthYearMode() ? monthArray[customDate.getMonthOfYear() - 1] + " " : "";
+
+            if (containsTime) {
+                customDateText = day + month + customDate.getYear() + ", " + df.format(customDate.toDate());
+            } else {
+                customDateText = day + month + customDate.getYear();
+            }
         }
         return String.format(context.getString(R.string.custom_date), customDateText, gregorianDateText);
     }
 
-    private static String getDateTimePattern(boolean containsTime, DatePickerDetails datePickerDetails) {
-        String datePattern;
+    private static String getDateTimeSkeleton(boolean containsTime, DatePickerDetails datePickerDetails) {
+        String dateSkeleton;
         if (containsTime) {
-            datePattern = "yyyyMMMdd HHmm";
+            dateSkeleton = "yyyyMMMdd HHmm";
         } else {
-            datePattern = "yyyyMMMdd";
+            dateSkeleton = "yyyyMMMdd";
         }
         if (datePickerDetails.isMonthYearMode()) {
-            datePattern = "yyyyMMM";
+            dateSkeleton = "yyyyMMM";
         } else if (datePickerDetails.isYearMode()) {
-            datePattern = "yyyy";
+            dateSkeleton = "yyyy";
         }
-        return datePattern;
+        return dateSkeleton;
     }
 
     public static LocalDateTime skipDaylightSavingGapIfExists(LocalDateTime date) {
@@ -111,6 +143,9 @@ public class DateTimeUtils {
                 datePickerMode = DatePickerDetails.DatePickerMode.SPINNERS;
             } else if (appearance.contains("islamic")) {
                 datePickerType = DatePickerDetails.DatePickerType.ISLAMIC;
+                datePickerMode = DatePickerDetails.DatePickerMode.SPINNERS;
+            } else if (appearance.contains("bikram-sambat")) {
+                datePickerType = DatePickerDetails.DatePickerType.BIKRAM_SAMBAT;
                 datePickerMode = DatePickerDetails.DatePickerMode.SPINNERS;
             } else if (appearance.contains("no-calendar")) {
                 datePickerMode = DatePickerDetails.DatePickerMode.SPINNERS;

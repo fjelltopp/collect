@@ -157,6 +157,7 @@ public class DeviceReportJob extends Job {
         ArrayList<String> displayNames = new ArrayList<String>();
         ArrayList<String> formFileMD5Sums = new ArrayList<String>();
         ArrayList<String> jrVersions = new ArrayList<String>();
+        DownloadFormListUtils mDownloadFormListUtils = new DownloadFormListUtils();
 
         int n = 0;
         Cursor c = null;
@@ -169,7 +170,8 @@ public class DeviceReportJob extends Job {
             if (c.getCount() > 0) {
                 c.moveToPosition(-1);
                 HashMap<String, FormDetails> formDetailsHashMap =
-                        DownloadFormListUtils.downloadFormList(true);
+
+                        mDownloadFormListUtils.downloadFormList(true);
                 while (c.moveToNext()) {
                     String currentFormId = c.getString(c.getColumnIndex(FormsProviderAPI.FormsColumns.JR_FORM_ID));
                     formReports.add(formDetailsHashMap.get(currentFormId));
@@ -191,14 +193,20 @@ public class DeviceReportJob extends Job {
         JSONObject locationJSONObject = new JSONObject();
 
         for (String provider : providers) {
-            Location l = mLocationManager.getLastKnownLocation(provider);
+            try {
+                Location l = mLocationManager.getLastKnownLocation(provider);
 
-            if (l == null) {
-                continue;
+                if (l == null) {
+                    continue;
+                }
+                if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy()) {
+                    // Found best last known location: %s", l);
+                    bestLocation = l;
+                }
             }
-            if (bestLocation == null || l.getAccuracy() < bestLocation.getAccuracy()) {
-                // Found best last known location: %s", l);
-                bestLocation = l;
+            catch (SecurityException e){
+                Timber.e("Security exception when getting location: " + e.getMessage());
+                return null;
             }
         }
 
@@ -208,7 +216,7 @@ public class DeviceReportJob extends Job {
                 locationJSONObject.put("latitude", bestLocation.getLatitude());
             }
             catch (JSONException e){
-                Log.e(TAG,"JSON exception when getting location: " + e.getMessage());
+                Timber.e("JSON exception when getting location: " + e.getMessage());
                 return null;
             }
         }

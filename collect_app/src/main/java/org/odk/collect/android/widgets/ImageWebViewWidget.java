@@ -35,11 +35,12 @@ import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.analytics.HitBuilders;
+
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.StringData;
 import org.javarosa.form.api.FormEntryPrompt;
 import org.odk.collect.android.R;
-import org.odk.collect.android.activities.FormEntryActivity;
 import org.odk.collect.android.application.Collect;
 import org.odk.collect.android.listeners.PermissionListener;
 import org.odk.collect.android.utilities.MediaManager;
@@ -52,7 +53,6 @@ import java.util.Date;
 import timber.log.Timber;
 
 import static org.odk.collect.android.utilities.ApplicationConstants.RequestCodes;
-import static org.odk.collect.android.utilities.PermissionUtils.requestCameraPermission;
 
 /**
  * Widget that allows user to take pictures, sounds or video and add them to the
@@ -85,10 +85,8 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
         errorTextView.setText(R.string.selected_invalid_image);
 
         captureButton = getSimpleButton(getContext().getString(R.string.capture_image), R.id.capture_image);
-        captureButton.setEnabled(!prompt.isReadOnly());
 
         chooseButton = getSimpleButton(getContext().getString(R.string.choose_image), R.id.choose_image);
-        chooseButton.setEnabled(!prompt.isReadOnly());
 
         // finish complex layout
         LinearLayout answerLayout = new LinearLayout(getContext());
@@ -97,11 +95,6 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
         answerLayout.addView(chooseButton);
         answerLayout.addView(errorTextView);
 
-        // and hide the capture and choose button if read-only
-        if (prompt.isReadOnly()) {
-            captureButton.setVisibility(View.GONE);
-            chooseButton.setVisibility(View.GONE);
-        }
         errorTextView.setVisibility(View.GONE);
 
         // retrieve answer from data model and update ui
@@ -127,6 +120,13 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
             answerLayout.addView(imageDisplay);
         }
         addAnswerView(answerLayout);
+
+        Collect.getInstance().getDefaultTracker()
+                .send(new HitBuilders.EventBuilder()
+                        .setCategory("ImageWebViewWidget")
+                        .setAction("created")
+                        .setLabel(Collect.getCurrentFormIdentifierHash())
+                        .build());
     }
 
     private String constructImageElement() {
@@ -270,7 +270,7 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
     public void onButtonClick(int buttonId) {
         switch (buttonId) {
             case R.id.capture_image:
-                requestCameraPermission((FormEntryActivity) getContext(), new PermissionListener() {
+                getPermissionUtils().requestCameraPermission(new PermissionListener() {
                     @Override
                     public void granted() {
                         captureImage();
@@ -288,10 +288,6 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
     }
 
     private void captureImage() {
-        Collect.getInstance()
-                .getActivityLogger()
-                .logInstanceAction(this, "captureButton", "click",
-                        getFormEntryPrompt().getIndex());
         errorTextView.setVisibility(View.GONE);
         Intent i = new Intent(
                 android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
@@ -322,10 +318,6 @@ public class ImageWebViewWidget extends QuestionWidget implements FileWidget {
     }
 
     private void chooseImage() {
-        Collect.getInstance()
-                .getActivityLogger()
-                .logInstanceAction(this, "chooseButton", "click",
-                        getFormEntryPrompt().getIndex());
         errorTextView.setVisibility(View.GONE);
         Intent i = new Intent(Intent.ACTION_GET_CONTENT);
         i.setType("image/*");

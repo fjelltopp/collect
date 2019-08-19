@@ -48,6 +48,7 @@
   <string name="discard_answer">បោះបង់ចម្លើយ</string>
   <string name="discard_group">ដក​ក្រុម​ចេញ</string>
   <string name="download">ទទួលការជ្រើសរើស</string>
+  <string name="download_forms_result">លទ្ធផលនៃការទាញយក</string>
   <string name="downloading_data">កំពុង​ភ្ជាប់​ទៅ​កាន់​ម៉ាស៊ីន​មេ</string>
   <string name="do_not_change">បោះបង់</string>
   <string name="do_not_exit">បោះបង់</string>
@@ -116,6 +117,8 @@
   <string name="send_data">បញ្ជូនសំណុំ​បែប​បទ​ដែលបានបញ្ចប់</string>
   <string name="send_data_button">បញ្ជូនសំណុំ​បែប​បទ​ដែលបានបញ្ចប់ (%s)</string>
   <string name="send_selected_data">បញ្ជូនការជ្រើសរើស</string>
+  <string name="send_selected_data_internet">ផ្ញើចេញ (អ៊ិនធើណីត)</string>
+  <string name="send_selected_data_sms">ផ្ញើ (សារ)</string>
   <string name="view_sent_forms">បង្ហាញសំណុំ​បែប​បទដែលបានផ្ញើចេញ</string>
   <string name="view_sent_forms_button">បង្ហាញសំណុំ​បែប​បទដែលបានផ្ញើចេញ (%s)</string>
   <string name="server_auth_credentials">ឈ្មោះអ្នកប្រើប្រាស់ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវសម្រាប់ម៉ាស៊ីនមេ៖ %s</string>
@@ -152,6 +155,7 @@
   <string name="file_fetch_failed">បញ្ហា: %2$s (%3$s) នៅ %1$s</string>
   <string name="fetching_manifest">%s. ការទាញបញ្ជី</string>
   <string name="success">ជោគជ័យ</string>
+  <string name="failures">បរាជ័យ</string>
   <string name="no_forms_uploaded">សុំទោស, គ្មានសំណុំ​បែប​បទសម្រាប់ផ្ទុកឡើង.</string>
   <string name="upload_results">លទ្ធផលនៃការផ្ទុកឡើង</string>
   <string name="xform_parse_error">XForm មាន​បញ្ហា​ក្នុង​ការ​ញែក​ដោយ​បាត់បង់ ឬ​មិន​ត្រឹម​ត្រូវ​សម្រាប់ %1$s: %2$s</string>
@@ -208,7 +212,7 @@
   <string name="admin_password_incorrect">សោកស្តាយផង, ពាក្យសម្ងាត់នេះមិនត្រឹមត្រូវ!</string>
   <string name="enter_admin_password">បញ្ចូលពាក្យសម្ងាត់របស់ Admin</string>
   <string name="change_admin_password">ផ្លាស់​ប្តូរ​ពាក្យ​សម្ងាត់​ Admin</string>
-  <string name="autosend">ផ្ញើរ​ចេញ​ដោយ​ស្វ័យ​ប្រវត្តិ</string>
+  <string name="autosend">ផ្ញើចេញ​ដោយ​ស្វ័យ​ប្រវត្តិ</string>
   <string name="found_in_main">ដោះ​ធីក​ដើម្បី​លាក់ចេញ​ពី​ម៉ឺនុយមេ</string>
   <string name="found_in_settings">ដោះធីក​ដើម្បី​លាក់ចេញ​ពីការ​កំណត់ទូទៅ</string>
   <string name="save_preferences">រក្សាទុកការកំណត់ទៅកាន់ថាស</string>
@@ -274,7 +278,6 @@
   <string name="no_google_account">គ្មាន​គណនី​ Google បាន​ជ្រើស​រើស</string>
   <string name="google_set_account">អ្នក​បាន​ជ្រើស​សន្លឹក​ Google ជា​ម៉ាស៊ីន​មេ​របស់​អ្នក​សូម​ជ្រើស​រើស​គណនី Google ត្រូវគ្នា ដែលឋិតក្នុងការកំណត់ទូទៅមុននឹងបន្ត</string>
   <string name="media_upload_error">បរាជ័យក្នុងការផ្ទុកឯកសារមេឌៀដែលមិនមាន៖ %1$s</string>
-  <string name="odk_auth_auth_fail">​ការផ្ទៀង​ផ្ទាត់​បរាជ័យដើម្បីឲ្យ ODK ផ្ញើរចេញដោយស្វ័យប្រវត្តិ សូមធ្វើឲ្យប្រាកដថា​ការកំណត់របស់​អ្នក​ត្រឹម​ត្រូវ</string>
   <string name="notification_error">បង្ហាញសារជួនដំណឹងដែលមានបញ្ហា</string>
   <string name="delete_after_send">លុបទម្រង់បន្ទាប់ការផ្ញើចេញ</string>
   <string name="delete_after_send_summary">លុប​សំណុំ​​បែប​​បទ​ដែល​បាន​បញ្ចប់ និង​មីឌៀ ​បន្ទាប់​ពី​ការ​ផ្ញើ​ចេញ​ទៅ​កាន់​ម៉ាស៊ីន​មេ</string>
@@ -323,7 +326,6 @@
   <string name="select_geotrace_mode">ជ្រើសរើសវិធី GeoTrace</string>
   <string name="start">ចាប់ផ្តើម</string>
   <string name="enable_gps">ដំណើរ​ការ​ប្រព័ន្ធ​ចាប់​ទីតាំង</string>
-  <string name="enable_gps_message">ប្រព័ន្ធ​ចាប់​ទី​តាំង​ក្នុងឧបករណ៍​របស់​អ្នក​បានបិទ។ តើ​អ្នក​ចង់​បើក​ដំណើរ​ការ​វា​ដែរ​ឬ​ទេ?</string>
   <string name="geotrace_title">GeoTrace</string>
   <string name="polygon_save">រក្សាទុកជាពហុកោណ</string>
   <string name="polyline_save">រក្សាទុកជាពហុបន្ទាត់</string>
@@ -335,7 +337,6 @@
   <string name="geo_exit_warning">បោះបង់​ការផ្លាស់​ប្តូរ និងត្រឡប់ទៅកាន់ ODK វិញ?</string>
   <string name="polygon_validator">ត្រូវការចំនុចយ៉ាងតិច 3 ដើម្បី​បង្កើតពហុកោណ</string>
   <string name="clear">លុ​បចេញ</string>
-  <string name="polyline_polygon_text">រក្សាទុក GeoTrace ជា</string>
   <string name="manual_mode">របៀបធ្វើដោយដៃ</string>
   <string name="automatic_mode">របៀបធ្វើដោយស័្វយប្រវត្តិ</string>
   <string name="geoshape_instruction">ចុចយូរដើម្បីដាក់ស្លាកកន្លែង</string>
@@ -369,6 +370,7 @@
   <string name="parser_exception">XPathParser Exception: \"%s\"</string>
   <string name="selected_answer">បានជ្រើសរើស៖ %s</string>
   <string name="version_number">ជំនាន់: %s</string>
+  <string name="id_number">ID: %s</string>
   <string name="odk_website">ចូលទៅកាន់គេហទំព័រ ODK</string>
   <string name="odk_website_summary">Open Data Kit (ODK) បាន​ប្រើ​ប្រាស់​ដើម្បី​ប្រមូល​ទិន្នន័យសម្រាប់ភាពប្រសើរ​របស់​សង្គមនៅក្នុងបរិយាកាស​ប្រកួត​ប្រជែង​។</string>
   <string name="odk_forum">ចូល​រួម​ជា​មួយ​វេទិកា ODK</string>
@@ -427,7 +429,6 @@
   <string name="sort_by_status_asc">ស្ថានភាព, បានបញ្ចប់មុនបំផុត</string>
   <string name="sort_by_status_desc">ស្ថានភាព, មិនបានបញ្ចប់មុនបំផុត</string>
   <string name="sort_the_list">តម្រៀបបញ្ជី</string>
-  <string name="request_permissions_google_account">កម្មវិធី ODK Collect ត្រូវ​ការ​ចូល​ទៅ​កាន់​គណនី​ Google របស់​អ្នក​ដើម្បី​ទាញ​យក​ទម្រង់​ទទេរ​ និង​បញ្ជូន​ទម្រង់​ដែល​បាន​បំពេញ​ហើយ។</string>
   <string name="filter_the_list">តម្រងបញ្ជី</string>
   <string name="language">ភាសា</string>
   <string name="google_auth_io_exception_msg">មិន​អាច​ប្រើប្រាស់​ API បាន​។ ប្រសិន​ជា​អ្នក​កំពុង​ដំណើរការ​កសាង​ក្នុង​ម៉ាស៊ីន (local), សូម​អាន​អំពី​គម្រោង​នេះ​សារ​ឡើង​វិញ​។</string>
@@ -477,7 +478,7 @@
   <string name="main_menu_settings">ការកំណត់ផ្ទាំងមេមីនុយ</string>
   <string name="main_menu_settings_summary">ប៉ះ​ដើម្បី​គ្រប់គ្រង​ធាតុ​នៃផ្ទាំងមេមីនុយ</string>
   <string name="user_access_control">ការត្រួតពិនិត្យការចូលប្រើរបស់អ្នកប្រើ</string>
-  <string name="autosend_selector_title">ផ្ញើរ​ចេញ​ដោយ​ស្វ័យ​ប្រវត្តិ</string>
+  <string name="autosend_selector_title">ផ្ញើ​ចេញ​ដោយ​ស្វ័យ​ប្រវត្តិ</string>
   <string name="off">បិទ</string>
   <string name="guidance_no">ទេ</string>
   <string name="guidance_yes">បាទ/ចាស - តែងតែបង្ហាញ</string>
@@ -591,4 +592,9 @@
   <string name="location_metadata">ផ្កាយរណបមាន៖ %1$d/24\n\nពេលវេលាកន្លងទៅ៖ %2$s</string>
   <string name="instance_upload_cancelled">បានបោះបង់ការផ្ទុកឡើងភ្លាមៗ</string>
   <!--Sms submission-->
+  <string name="transport_type_sms">សារ</string>
+  <string name="transport_type_both">ជ្រើសរើសនៅពេលផ្ញើ</string>
+  <string name="seconds">វិនាទី</string>
+  <string name="rank_items">ចំណាត់ថ្នាក់ធាតុ</string>
+  <string name="missing_google_account_dialog_title">មិនទាន់ដាក់គណនី Google</string>
 </resources>

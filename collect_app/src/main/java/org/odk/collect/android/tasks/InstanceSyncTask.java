@@ -29,12 +29,13 @@ import org.odk.collect.android.dao.InstancesDao;
 import org.odk.collect.android.exception.EncryptionException;
 import org.odk.collect.android.listeners.DiskSyncListener;
 import org.odk.collect.android.logic.FormController;
-import org.odk.collect.android.preferences.PreferenceKeys;
+import org.odk.collect.android.preferences.GeneralKeys;
 import org.odk.collect.android.provider.FormsProviderAPI.FormsColumns;
 import org.odk.collect.android.provider.InstanceProviderAPI;
 import org.odk.collect.android.utilities.EncryptionUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,6 +46,7 @@ import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import timber.log.Timber;
 
@@ -140,7 +142,7 @@ public class InstanceSyncTask extends AsyncTask<Void, String, String> {
 
                 final boolean instanceSyncFlag = PreferenceManager.getDefaultSharedPreferences(
                         Collect.getInstance().getApplicationContext()).getBoolean(
-                        PreferenceKeys.KEY_INSTANCE_SYNC, true);
+                        GeneralKeys.KEY_INSTANCE_SYNC, true);
 
                 int counter = 0;
                 // Begin parsing and add them to the content provider
@@ -211,7 +213,7 @@ public class InstanceSyncTask extends AsyncTask<Void, String, String> {
             Document document = builder.parse(new File(instancePath));
             Element element = document.getDocumentElement();
             instanceFormId = element.getAttribute("id");
-        } catch (Exception e) {
+        } catch (IOException | ParserConfigurationException | SAXException e) {
             Timber.w("Unable to read form id from %s", instancePath);
         }
         return instanceFormId;
@@ -225,7 +227,7 @@ public class InstanceSyncTask extends AsyncTask<Void, String, String> {
             Document document = builder.parse(new File(instancePath));
             Element element = document.getDocumentElement();
             instanceId = element.getAttribute("instanceID");
-        } catch (Exception e) {
+        } catch (IOException | ParserConfigurationException | SAXException e) {
             Timber.w("Unable to read form instanceID from %s", instancePath);
         }
         return instanceId;
@@ -250,7 +252,7 @@ public class InstanceSyncTask extends AsyncTask<Void, String, String> {
         File instanceXml = new File(candidateInstance);
         if (!new File(instanceXml.getParentFile(), "submission.xml.enc").exists()) {
             Uri uri = Uri.parse(InstanceColumns.CONTENT_URI + "/" + instanceCursor.getInt(instanceCursor.getColumnIndex(BaseColumns._ID)));
-            FormController.InstanceMetadata instanceMetadata = new FormController.InstanceMetadata(getInstanceIdFromInstance(candidateInstance), null, false);
+            FormController.InstanceMetadata instanceMetadata = new FormController.InstanceMetadata(getInstanceIdFromInstance(candidateInstance), null, null);
             EncryptionUtils.EncryptedFormInformation formInfo = EncryptionUtils.getEncryptedFormInformation(uri, instanceMetadata);
 
             if (formInfo != null) {

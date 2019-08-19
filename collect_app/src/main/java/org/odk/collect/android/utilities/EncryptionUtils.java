@@ -64,7 +64,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 import timber.log.Timber;
 
-import static org.odk.collect.android.utilities.ApplicationConstants.XML_OPENROSA_NAMESPACE;
+import static org.odk.collect.android.utilities.ApplicationConstants.Namespaces.XML_OPENROSA_NAMESPACE;
 
 /**
  * Utility class for encrypting submissions during the SaveToDiskTask.
@@ -137,7 +137,7 @@ public class EncryptionUtils {
                 byte[] messageDigest = md.digest();
                 ivSeedArray = new byte[IV_BYTE_LENGTH];
                 for (int i = 0; i < IV_BYTE_LENGTH; ++i) {
-                    ivSeedArray[i] = messageDigest[(i % messageDigest.length)];
+                    ivSeedArray[i] = messageDigest[i % messageDigest.length];
                 }
             } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
                 Timber.e(e, "Unable to set md5 hash for instanceid and symmetric key.");

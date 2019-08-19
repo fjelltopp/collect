@@ -33,8 +33,10 @@ out/
 .navigation/
 captures/
 
+# Config for the official ODK Collect build
+collect_app/src/odkCollectRelease/
 # Output files
 **/output.json
 
-# Form assets 
+# Form assets
 **/assets/forms
